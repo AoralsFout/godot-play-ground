@@ -305,3 +305,5 @@ func _sync_water(force := false) -> void:
 		_water_material = material
 		material.set_shader_parameter("sky_zenith", cloud_material.get_shader_parameter("zenith_color"))
 		material.set_shader_parameter("sky_horizon", cloud_material.get_shader_parameter("horizon_color"))
+		var ambient := environment.ambient_light_color.srgb_to_linear()
+		material.set_shader_parameter("water_ambient_light", Vector3(ambient.r, ambient.g, ambient.b) * environment.ambient_light_energy)

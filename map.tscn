@@ -12,5 +12,8 @@ wind_speed = 2.5
 fall_speed = 0.30000000000000004
 fall_drift = 0.05
 
+[node name="树干" parent="." index="60" unique_id=1634331638]
+visible = false
+
 [node name="细分雕刻地图2" parent="." index="95" unique_id=2096176942]
 surface_material_override/0 = ExtResource("2_elevation")

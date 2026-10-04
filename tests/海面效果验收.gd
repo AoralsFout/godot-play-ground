@@ -78,7 +78,52 @@ func _run() -> void:
 	var refracted := await _capture("ocean_refraction")
 	var difference := _difference(straight, refracted)
 	_check(difference > 0.01, "underwater geometry refracts", difference)
+	# 隔离镜面辐射，避免海床、散射或直射高光混入倒影的光照验收。
+	water.reflections_enabled = false
+	material.set_shader_parameter("absorption", Vector3.ONE * 5.0)
+	material.set_shader_parameter("shallow_color", Color.BLACK)
+	material.set_shader_parameter("deep_color", Color.BLACK)
+	material.set_shader_parameter("foam_strength", 0.0)
+	material.set_shader_parameter("highlight_strength", 0.0)
+	material.set_shader_parameter("reflection_steps", 0)
+	material.set_shader_parameter("sky_horizon", Color(0.6, 0.75, 0.9))
+	material.set_shader_parameter("sky_zenith", Color(0.6, 0.75, 0.9))
+	camera.projection = Camera3D.PROJECTION_PERSPECTIVE
+	camera.position = Vector3(0, 2, 8)
+	camera.look_at(Vector3(0, 0, -8))
+	sun.light_energy = 0.0
+	var reflection_unlit := await _capture("atmosphere_reflection_unlit")
+	sun.light_energy = 2.0
+	var reflection_lit := await _capture("atmosphere_reflection_lit")
+	difference = _difference(reflection_unlit, reflection_lit)
+	_check(difference < 0.002, "captured reflection is not lit a second time", difference)
+	environment.environment.fog_light_color = Color(0.8, 0.4, 0.3)
+	environment.environment.fog_density = 0.04
+	environment.environment.fog_sky_affect = 0.0
+	environment.environment.fog_enabled = true
+	var fogged := await _capture("atmosphere_depth_fog")
+	difference = _difference(reflection_lit, fogged)
+	_check(difference > 0.03, "water receives scene distance fog", difference)
+	environment.environment.fog_enabled = false
+	environment.environment.volumetric_fog_enabled = true
+	environment.environment.volumetric_fog_density = 0.05
+	environment.environment.volumetric_fog_albedo = Color(0.8, 0.4, 0.3)
+	var volume_fogged := await _capture("atmosphere_volume_fog")
+	difference = _difference(reflection_lit, volume_fogged)
+	_check(difference > 0.03, "water receives scene volumetric fog", difference)
+	environment.environment.volumetric_fog_enabled = false
+	for parameter in ["absorption", "shallow_color", "deep_color", "foam_strength", "highlight_strength", "reflection_steps", "sky_horizon", "sky_zenith"]:
+		material.set_shader_parameter(parameter, null)
+	water.reflections_enabled = true
+	sun.light_energy = 1.0
+	camera.projection = Camera3D.PROJECTION_ORTHOGONAL
+	camera.position = Vector3(0, 12, 0)
+	camera.rotation_degrees = Vector3(-90, 0, 0)
 	# 海床使用无光照材质，只有水面实际接收到的阴影才能改变像素。
+	# 使用足够的散射量隔离阴影；海床和倒影不应因水面光照被再次变暗。
+	material.set_shader_parameter("absorption", Vector3.ONE)
+	material.set_shader_parameter("shallow_color", Color.WHITE)
+	material.set_shader_parameter("deep_color", Color.WHITE)
 	var blocker := MeshInstance3D.new()
 	var box := BoxMesh.new()
 	box.size = Vector3(3, 0.5, 3)
@@ -92,6 +137,8 @@ func _run() -> void:
 	var shadowed := await _capture("ocean_shadow_on")
 	difference = _difference(lit, shadowed, Rect2i(305, 135, 60, 60))
 	_check(difference > 0.04, "shadow falls on water above unshaded bed", difference)
+	for parameter in ["absorption", "shallow_color", "deep_color"]:
+		material.set_shader_parameter(parameter, null)
 	blocker.queue_free()
 	camera.projection = Camera3D.PROJECTION_PERSPECTIVE
 	water.underwater_enabled = false
@@ -120,8 +167,14 @@ func _run() -> void:
 	_check(camera.environment == null, "disabling effect restores original camera environment", 0.0)
 	water.underwater_enabled = true
 	camera.position.y = 2.0
+	environment.environment.ambient_light_color = Color(0.2, 0.3, 0.4)
+	environment.environment.fog_light_color = Color(0.3, 0.4, 0.5)
 	await _capture("ocean_above_again")
 	_check(camera.environment == null, "surfacing restores original camera environment", 0.0)
+	var mirror_environment: Environment = water.get_node("OceanReflection").get_camera_3d().environment
+	_check(mirror_environment.ambient_light_color == environment.environment.ambient_light_color
+		and mirror_environment.fog_light_color == environment.environment.fog_light_color,
+		"planar reflection follows changing scene lighting and fog color", 0.0)
 	camera.position.y = -1.5
 	await _capture("ocean_submerged_again")
 	# 俯视小地图不能继承主摄像机的水下效果。

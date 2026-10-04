@@ -198,6 +198,10 @@ func _run() -> void:
 	_angle(-9.0)
 	_check(replacement.get_shader_parameter("sky_horizon") == sky.cloud_material.get_shader_parameter("horizon_color"),
 		"replaced water material follows blue hour sky")
+	var ambient := sky.environment.ambient_light_color.srgb_to_linear()
+	_check(replacement.get_shader_parameter("water_ambient_light").is_equal_approx(
+		Vector3(ambient.r, ambient.g, ambient.b) * sky.environment.ambient_light_energy),
+		"replaced water material follows linear scene ambient lighting")
 	sun.hide()
 	sky._process(0.0)
 	_check(is_zero_approx(float(sky.cloud_material.get_shader_parameter("sun_visibility"))), "hidden sun removes visible solar disk")

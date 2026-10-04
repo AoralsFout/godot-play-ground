@@ -153,6 +153,13 @@ func _update_reflection() -> void:
 		_reflection_camera.environment.tonemap_exposure = 1.0
 		_reflection_camera.environment.glow_enabled = false
 		_reflection_camera.environment.ssr_enabled = false
+	if source != null:
+		# 昼夜和天气会原地更新 Environment，倒影不能停留在创建时的光照与雾色。
+		for parameter in ["ambient_light_source", "ambient_light_color", "ambient_light_energy", "ambient_light_sky_contribution",
+			"fog_enabled", "fog_light_color", "fog_light_energy", "fog_sun_scatter", "fog_density", "fog_aerial_perspective", "fog_sky_affect",
+			"volumetric_fog_enabled", "volumetric_fog_density", "volumetric_fog_gi_inject"]:
+			if _reflection_camera.environment.get(parameter) != source.get(parameter):
+				_reflection_camera.environment.set(parameter, source.get(parameter))
 	material.set_shader_parameter("planar_reflection", _reflection_viewport.get_texture())
 	var view_projection := _reflection_camera.get_camera_projection() * Projection(_reflection_camera.global_transform.affine_inverse())
 	material.set_shader_parameter("reflection_view_projection", view_projection)

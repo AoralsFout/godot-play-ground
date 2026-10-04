@@ -1,6 +1,6 @@
 shader_type spatial;
 // 在绘制透明水面之前复制屏幕；写入深度以正确排序重叠的波浪。
-render_mode blend_mix, depth_draw_always, cull_disabled, ambient_light_disabled, fog_disabled;
+render_mode blend_mix, depth_draw_always, cull_disabled, ambient_light_disabled;
 #include "res://海浪.gdshaderinc"
 uniform vec4 shallow_color : source_color = vec4(0.18, 0.58, 0.56, 1.0);
 uniform vec4 deep_color : source_color = vec4(0.008, 0.065, 0.10, 1.0);
@@ -26,6 +26,8 @@ uniform float reflection_plane_height = 15.0;
 uniform float reflection_distortion : hint_range(0.0, 0.1) = 0.018;
 uniform vec4 sky_zenith : source_color = vec4(0.18, 0.43, 0.78, 1.0);
 uniform vec4 sky_horizon : source_color = vec4(0.68, 0.82, 0.94, 1.0);
+// 仅给水体散射补光；折射和倒影已经包含场景光照，不再重复照明。
+uniform vec3 water_ambient_light = vec3(0.12, 0.15, 0.18);
 uniform bool use_distance_lod = false;
 uniform vec2 lod_center = vec2(0.0);
 uniform vec2 water_half_size = vec2(2000.0, 1500.0);
@@ -99,7 +101,8 @@ void fragment() {
  vec3 transmittance = FRONT_FACING ? exp(-absorption * path_length * visibility * density) : vec3(1.0);
  vec3 bed = textureLod(screen_texture, refracted_uv, 0.0).rgb;
  vec3 scatter = mix(shallow_color.rgb, deep_color.rgb, smoothstep(0.0, depth_fade_distance, depth));
- vec3 transmitted = bed * transmittance + scatter * (1.0 - transmittance);
+ vec3 transmitted = bed * transmittance;
+ vec3 scattering = scatter * (1.0 - transmittance);
  float cosine = clamp(dot(NORMAL, VIEW), 0.0, 1.0);
  float fresnel = 0.0204 + 0.9796 * pow(1.0 - cosine, 5.0);
  fresnel = clamp(fresnel * reflection_strength, 0.0, 1.0);
@@ -151,23 +154,20 @@ void fragment() {
    reflected = mix(reflected, mirror, edge);
   }
  }
- vec3 radiance = mix(transmitted, reflected, fresnel);
  float foam_noise = smooth_noise(water_world_xz * 1.8 + vec2(0.2, -0.15) * time).x;
  float foam = (1.0 - smoothstep(0.15, 1.0, depth)) * smoothstep(0.42, 0.72, foam_noise) * foam_strength;
- radiance = mix(radiance, vec3(0.80, 0.88, 0.86), foam);
- radiance = mix(textureLod(screen_texture, SCREEN_UV, 0.0).rgb, radiance, shore);
- // 透射图像接收太阳阴影时，仍保留少量天空补光。
- ALBEDO = radiance * shore * 0.78;
- EMISSION = radiance * (1.0 - shore * 0.78);
+ // 镜面和海床颜色作为已有光照合成；只有水体散射与泡沫接收直射光。
+ // 单独同步环境补光，避免巨大水面再次采样局部烘焙 GI 产生边界。
+ ALBEDO = mix(scattering * (1.0 - fresnel), vec3(0.80, 0.88, 0.86), foam);
+ EMISSION = mix(mix(transmitted, reflected, fresnel), vec3(0.0), foam) + ALBEDO * water_ambient_light;
  ROUGHNESS = mix(water_roughness, 0.65, foam);
  SPECULAR = highlight_strength * shore;
  surface_specular = highlight_strength * shore;
- ALPHA = 1.0;
+ // 使用透明混合衔接已带雾的岸边海床，避免岸线被重复叠加雾色。
+ ALPHA = shore;
 }
 void light() {
- // Godot 会在 light() 之后将 DIFFUSE_LIGHT 乘以 ALBEDO。若在这里再次相乘，
- // 会将折射的沙色平方，导致浅水过暗。
- DIFFUSE_LIGHT += LIGHT_COLOR * ATTENUATION / PI;
+ DIFFUSE_LIGHT += LIGHT_COLOR * ATTENUATION * max(dot(NORMAL, LIGHT), 0.0) / PI;
  vec3 half_vector = normalize(LIGHT + VIEW);
  float ndl = max(dot(NORMAL, LIGHT), 0.0);
  float ndv = max(dot(NORMAL, VIEW), 0.001);

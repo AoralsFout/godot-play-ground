@@ -48,6 +48,9 @@ func _run() -> void:
 	material.set_shader_parameter("use_game_time", true)
 	material.set_shader_parameter("game_time", 2.0)
 	material.set_shader_parameter("wave_height", 0.258)
+	# 用较高吸收隔离岸线覆盖率；清浅水不再靠重复照明制造深色边界。
+	material.set_shader_parameter("absorption", Vector3.ONE * 2.0)
+	material.set_shader_parameter("shore_fade_distance", 0.4)
 	water.material_override = material
 	viewport.add_child(water)
 	var camera := Camera3D.new()
@@ -83,6 +86,9 @@ func _run() -> void:
 		failures += 1
 		push_error("FAIL distant shallow water changed color when wave detail stopped")
 	# 向上观察时，无论背景是天空还是不透明几何体，都必须显示水面底面。
+	# 正视水面仅反射约 2%，用斜视角检查全内反射，而非要求正视天空变暗。
+	camera.fov = 110.0
+	camera.projection = Camera3D.PROJECTION_PERSPECTIVE
 	material.set_shader_parameter("use_distance_lod", false)
 	bed.visible = false
 	camera.position = Vector3(0, -8, 0)
@@ -96,8 +102,8 @@ func _run() -> void:
 		var clear_image := await _capture("underwater_%s_clear" % backdrop, false)
 		material.set_shader_parameter("transparency", 0.5)
 		var water_image := await _capture("underwater_%s" % backdrop, false)
-		var clear_color := clear_image.get_pixel(256, 256)
-		var water_color := water_image.get_pixel(256, 256)
+		var clear_color := clear_image.get_pixel(20, 20)
+		var water_color := water_image.get_pixel(20, 20)
 		var visibility := Vector3(water_color.r - clear_color.r, water_color.g - clear_color.g, water_color.b - clear_color.b).length()
 		print("UNDERWATER %s color_difference=%.5f" % [backdrop, visibility])
 		if visibility < 0.05:

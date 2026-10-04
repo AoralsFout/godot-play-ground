@@ -34,9 +34,15 @@ func _run() -> void:
 	screenshot.save_png("res://.godot/water_render/world_after%s.png" % suffix)
 	# 单独检查水面的全局光照（GI），排除折射或倒影中陆地的正常光照变化。
 	game.get_node("世界场景/水面").reflections_enabled = false
-	game.water_material.set_shader_parameter("absorption", Vector3.ONE * 5.0)
+	game.water_material.set_shader_parameter("absorption", Vector3.ONE * 1000.0)
+	game.water_material.set_shader_parameter("shore_fade_distance", 0.001)
 	game.water_material.set_shader_parameter("shallow_absorption", 1.0)
 	game.water_material.set_shader_parameter("reflection_steps", 0)
+	# 水面现在正常接收体积雾，雾中的 GI 光照属于预期效果。
+	# 隔离材质 GI 时关闭体积雾，并排除浅水透明混合中海床的正常 GI。
+	var environment: Environment = game.get_node("世界场景/世界环境").environment
+	var volume_fog := environment.volumetric_fog_enabled
+	environment.volumetric_fog_enabled = false
 	for frame in 12:
 		await process_frame
 		await RenderingServer.frame_post_draw
@@ -63,8 +69,10 @@ func _run() -> void:
 	var passed := changed_pixels == 0
 	print("RESULT world water: %s" % ("PASS" if passed else "FAIL two-color lighting boundary"))
 	game.get_node("世界场景/VoxelGI 全局光照").visible = true
+	environment.volumetric_fog_enabled = volume_fog
 	game.get_node("世界场景/水面").reflections_enabled = true
 	game.water_material.set_shader_parameter("absorption", null)
+	game.water_material.set_shader_parameter("shore_fade_distance", null)
 	game.water_material.set_shader_parameter("shallow_absorption", null)
 	game.water_material.set_shader_parameter("reflection_steps", null)
 	avatar.global_position = Vector3(12, 17.0, -10)

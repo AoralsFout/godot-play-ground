@@ -51,11 +51,16 @@ func _run() -> void:
 	game.get_node("GUI").hide()
 	var avatar: CharacterBody3D = game.avatars[1]
 	avatar.set_physics_process(false)
+	# SpringArm 自带物理更新，否则会把验收手动移动的相机拉回玩家身边。
+	avatar.camera_arm.process_mode = Node.PROCESS_MODE_DISABLED
 	var camera: Camera3D = avatar.camera
 	camera.global_position = Vector3(20.0, 26.0, 50.0)
 	camera.look_at(Vector3(0.0, 105.0, -180.0))
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	var clouds: WorldEnvironment = game.get_node("世界场景/世界环境")
+	# 云层验收固定白天，不依赖用户当前保存的太阳角度。
+	game.get_node("世界场景/日光").rotation_degrees = Vector3(-35.0, 26.0, 0.0)
+	clouds._process(0.0)
 	clouds.set_process(false)
 	clouds.cloud_material.set_shader_parameter("cloud_time", 12.0)
 	var noise: NoiseTexture3D = clouds.cloud_material.get_shader_parameter("cloud_noise")
@@ -64,6 +69,7 @@ func _run() -> void:
 		await process_frame
 	_check(not noise.get_data().is_empty(), "3D noise generated")
 	await _frames(16)
+	_check(clouds.solar_elevation > 15.0, "daylight fixture has sun above horizon")
 	var cloudy := _capture("world_clouds")
 	clouds.clouds_enabled = false
 	await _frames()

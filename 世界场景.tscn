@@ -22,19 +22,31 @@ seamless = true
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_v0oag"]
 shader = ExtResource("1_f4mso")
 shader_parameter/cloud_noise = SubResource("NoiseTexture3D_cloud")
-shader_parameter/cloud_coverage = 0.56
+shader_parameter/cloud_coverage = 0.35
 shader_parameter/cloud_density = 1.1
 shader_parameter/cloud_base = 180.0
 shader_parameter/cloud_thickness = 160.0
 shader_parameter/cloud_scale = 700.0
 shader_parameter/wind_velocity = Vector2(6, 2)
-shader_parameter/cloud_time = 4.19715400000001
+shader_parameter/cloud_time = 2.535046666666667
 shader_parameter/ray_steps = 48
 shader_parameter/max_distance = 9000.0
-shader_parameter/zenith_color = Color(0.18, 0.43, 0.78, 1)
-shader_parameter/horizon_color = Color(0.68, 0.82, 0.94, 1)
-shader_parameter/cloud_lit_color = Color(1, 0.98, 0.94, 1)
-shader_parameter/cloud_shadow_color = Color(0.4, 0.49, 0.62, 1)
+shader_parameter/zenith_color = Color(0.15500577, 0.34148243, 0.62086695, 0.944279)
+shader_parameter/horizon_color = Color(0.8599687, 0.68575615, 0.49350142, 0.94115674)
+shader_parameter/cloud_lit_color = Color(0.96886486, 0.8361391, 0.6745902, 0.96886486)
+shader_parameter/cloud_shadow_color = Color(0.290329, 0.32981217, 0.4453643, 0.9629343)
+shader_parameter/sky_sun_direction = Vector3(0.905127, 0.15126087, 0.3973228)
+shader_parameter/sun_color = Color(1, 0.5143171, 0.3391595, 1)
+shader_parameter/sun_strength = 0.9774466246051206
+shader_parameter/sun_visibility = 1.0
+shader_parameter/daylight = 0.5619274036271061
+shader_parameter/twilight = 0.7381223156343482
+shader_parameter/overcast = 0.07413135046645081
+shader_parameter/sky_moon_direction = Vector3(-0.8272783, 0.42419946, -0.368328)
+shader_parameter/moon_color = Color(0.76, 0.84, 1, 1)
+shader_parameter/moon_strength = 0.0
+shader_parameter/moon_visibility = 0.0
+shader_parameter/moon_angular_radius = 0.010471975511965976
 
 [sub_resource type="Sky" id="Sky_iwj50"]
 sky_material = SubResource("ShaderMaterial_v0oag")
@@ -46,10 +58,10 @@ background_mode = 2
 background_color = Color(0.5411765, 0.81960785, 1, 1)
 sky = SubResource("Sky_iwj50")
 sky_custom_fov = 90.0
-ambient_light_source = 3
-ambient_light_color = Color(0, 1, 1, 1)
-ambient_light_sky_contribution = 0.7
-ambient_light_energy = 0.65
+ambient_light_source = 2
+ambient_light_color = Color(0.636702, 0.6583672, 0.71488166, 0.9635412)
+ambient_light_sky_contribution = 0.0
+ambient_light_energy = 0.5425104
 reflected_light_source = 2
 tonemap_mode = 3
 tonemap_exposure = 0.85
@@ -65,12 +77,15 @@ glow_enabled = true
 glow_intensity = 0.15
 glow_hdr_threshold = 1.3
 fog_enabled = true
-fog_light_color = Color(0.68, 0.82, 0.94, 1)
-fog_sun_scatter = 0.08
-fog_density = 0.00035
+fog_light_color = Color(0.8599687, 0.68575615, 0.49350142, 0.94115674)
+fog_light_energy = 0.59080833
+fog_sun_scatter = 0.06527635
+fog_density = 0.00037223942
 fog_aerial_perspective = 0.35
 fog_sky_affect = 0.0
+volumetric_fog_enabled = true
 volumetric_fog_density = 0.01
+volumetric_fog_emission_energy = 0.0
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_ksbe4"]
 render_priority = 0
@@ -116,6 +131,7 @@ size = Vector2(4000, 3000)
 [node name="世界环境" type="WorldEnvironment" parent="." unique_id=945451979]
 environment = SubResource("Environment_h7kgv")
 script = ExtResource("6_cloud_controller")
+cloud_coverage = 0.35
 
 [node name="VoxelGI 全局光照" type="VoxelGI" parent="." unique_id=1788274566]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 40, 0)
@@ -123,11 +139,24 @@ size = Vector3(4000, 180, 3000)
 data = ExtResource("7_island_gi")
 
 [node name="日光" type="DirectionalLight3D" parent="." unique_id=1878366738]
-transform = Transform3D(0.89415425, -0.14281684, 0.4243719, 0, 0.94776845, 0.31895912, -0.44775906, -0.28519866, 0.8474512, 0, 24.227514, 0)
+transform = Transform3D(-0.4019476, 0.13850391, 0.90512687, 0, -0.9884938, 0.15126085, 0.9156626, 0.060798943, 0.3973227, 0, 24.227514, 0)
+light_color = Color(1, 0.5143171, 0.3391595, 1)
+light_energy = 0.93834746
+light_volumetric_fog_energy = 0.95999867
 shadow_enabled = true
 shadow_bias = 0.05
 shadow_blur = 10.0
 directional_shadow_max_distance = 160.0
+
+[node name="月光" type="DirectionalLight3D" parent="." unique_id=858578572]
+transform = Transform3D(-0.40673664, 0.38752544, -0.8272782, 0, 0.9055688, 0.4241994, 0.9135454, 0.17253745, -0.368328, 0, 30, 0)
+light_color = Color(0.76, 0.84, 1, 1)
+light_energy = 0.0
+light_volumetric_fog_energy = 0.96687824
+shadow_enabled = true
+shadow_blur = 6.0
+directional_shadow_max_distance = 120.0
+sky_mode = 1
 
 [node name="水面" type="MeshInstance3D" parent="." unique_id=1478765276]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 15, 0)

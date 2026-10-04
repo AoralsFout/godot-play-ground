@@ -1,0 +1,156 @@
+[gd_scene format=3 uid="uid://m0upkn44xwpi"]
+
+[ext_resource type="Shader" uid="uid://b88lb8blojt03" path="res://体积云.gdshader" id="1_f4mso"]
+[ext_resource type="Shader" uid="uid://b5s5h7ocpyipx" path="res://水面.gdshader" id="2_sevbq"]
+[ext_resource type="Script" uid="uid://cwsoh2sbh5v2f" path="res://水面.gd" id="3_water_lod"]
+[ext_resource type="PackedScene" uid="uid://dqy28maxtd88x" path="res://地图.tscn" id="4_c26x5"]
+[ext_resource type="Script" uid="uid://cv155u2gtsty0" path="res://体积云.gd" id="6_cloud_controller"]
+[ext_resource type="VoxelGIData" uid="uid://cm8rglq5er52j" path="res://assets/海岛光照.res" id="7_island_gi"]
+[ext_resource type="Script" uid="uid://dl81w5u22c3u4" path="res://草地.gd" id="8_grass"]
+
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_cloud"]
+noise_type = 3
+seed = 8237
+frequency = 0.045
+fractal_octaves = 3
+fractal_gain = 0.48
+
+[sub_resource type="NoiseTexture3D" id="NoiseTexture3D_cloud"]
+noise = SubResource("FastNoiseLite_cloud")
+seamless = true
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_v0oag"]
+shader = ExtResource("1_f4mso")
+shader_parameter/cloud_noise = SubResource("NoiseTexture3D_cloud")
+shader_parameter/cloud_coverage = 0.56
+shader_parameter/cloud_density = 1.1
+shader_parameter/cloud_base = 180.0
+shader_parameter/cloud_thickness = 160.0
+shader_parameter/cloud_scale = 700.0
+shader_parameter/wind_velocity = Vector2(6, 2)
+shader_parameter/cloud_time = 4.19715400000001
+shader_parameter/ray_steps = 48
+shader_parameter/max_distance = 9000.0
+shader_parameter/zenith_color = Color(0.18, 0.43, 0.78, 1)
+shader_parameter/horizon_color = Color(0.68, 0.82, 0.94, 1)
+shader_parameter/cloud_lit_color = Color(1, 0.98, 0.94, 1)
+shader_parameter/cloud_shadow_color = Color(0.4, 0.49, 0.62, 1)
+
+[sub_resource type="Sky" id="Sky_iwj50"]
+sky_material = SubResource("ShaderMaterial_v0oag")
+process_mode = 3
+
+[sub_resource type="Environment" id="Environment_h7kgv"]
+resource_name = "晴天海岛 · 均衡画质"
+background_mode = 2
+background_color = Color(0.5411765, 0.81960785, 1, 1)
+sky = SubResource("Sky_iwj50")
+sky_custom_fov = 90.0
+ambient_light_source = 3
+ambient_light_color = Color(0, 1, 1, 1)
+ambient_light_sky_contribution = 0.7
+ambient_light_energy = 0.65
+reflected_light_source = 2
+tonemap_mode = 3
+tonemap_exposure = 0.85
+tonemap_white = 6.0
+ssr_enabled = true
+ssr_max_steps = 32
+ssao_enabled = true
+ssao_radius = 0.8
+ssao_intensity = 1.2
+ssao_power = 1.2
+ssao_sharpness = 0.9
+glow_enabled = true
+glow_intensity = 0.15
+glow_hdr_threshold = 1.3
+fog_enabled = true
+fog_light_color = Color(0.68, 0.82, 0.94, 1)
+fog_sun_scatter = 0.08
+fog_density = 0.00035
+fog_aerial_perspective = 0.35
+fog_sky_affect = 0.0
+volumetric_fog_density = 0.01
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_ksbe4"]
+render_priority = 0
+shader = ExtResource("2_sevbq")
+shader_parameter/shallow_color = Color(0.18, 0.58, 0.56, 1)
+shader_parameter/deep_color = Color(0.008, 0.065, 0.1, 1)
+shader_parameter/absorption = Vector3(0.32, 0.095, 0.055)
+shader_parameter/shallow_absorption = 0.28
+shader_parameter/wave_height = 0.55
+shader_parameter/wave_speed = 1.0
+shader_parameter/use_game_time = false
+shader_parameter/game_time = 0.0
+shader_parameter/depth_fade_distance = 8.0
+shader_parameter/shore_fade_distance = 1.1
+shader_parameter/transparency = 0.5
+shader_parameter/refraction_strength = 0.035
+shader_parameter/highlight_strength = 0.65
+shader_parameter/water_roughness = 0.12
+shader_parameter/foam_strength = 0.38
+shader_parameter/reflection_steps = 12
+shader_parameter/reflection_strength = 1.25
+shader_parameter/use_planar_reflection = false
+shader_parameter/reflection_view_projection = Projection(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1)
+shader_parameter/reflection_plane_height = 15.0
+shader_parameter/reflection_distortion = 0.018
+shader_parameter/sky_zenith = Color(0.18, 0.43, 0.78, 1)
+shader_parameter/sky_horizon = Color(0.68, 0.82, 0.94, 1)
+shader_parameter/use_distance_lod = true
+shader_parameter/lod_center = Vector2(0, 0)
+shader_parameter/water_half_size = Vector2(2000, 1500)
+shader_parameter/wave_full_distance = 64.0
+shader_parameter/wave_end_distance = 112.0
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_sevbq"]
+albedo_color = Color(0, 0.6039216, 1, 1)
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_sevbq"]
+material = SubResource("StandardMaterial3D_sevbq")
+size = Vector2(4000, 3000)
+
+[node name="世界场景" type="Node3D" unique_id=415933619]
+
+[node name="世界环境" type="WorldEnvironment" parent="." unique_id=945451979]
+environment = SubResource("Environment_h7kgv")
+script = ExtResource("6_cloud_controller")
+
+[node name="VoxelGI 全局光照" type="VoxelGI" parent="." unique_id=1788274566]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 40, 0)
+size = Vector3(4000, 180, 3000)
+data = ExtResource("7_island_gi")
+
+[node name="日光" type="DirectionalLight3D" parent="." unique_id=1878366738]
+transform = Transform3D(0.89415425, -0.14281684, 0.4243719, 0, 0.94776845, 0.31895912, -0.44775906, -0.28519866, 0.8474512, 0, 24.227514, 0)
+shadow_enabled = true
+shadow_bias = 0.05
+shadow_blur = 10.0
+directional_shadow_max_distance = 160.0
+
+[node name="水面" type="MeshInstance3D" parent="." unique_id=1478765276]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 15, 0)
+layers = 524288
+cast_shadow = 0
+custom_aabb = AABB(-2000, -3, -1500, 4000, 6, 3000)
+gi_mode = 0
+script = ExtResource("3_water_lod")
+water_material = SubResource("ShaderMaterial_ksbe4")
+
+[node name="地图水面" type="MeshInstance3D" parent="." unique_id=1398271978]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 15, 0)
+layers = 2
+cast_shadow = 0
+gi_mode = 0
+mesh = SubResource("PlaneMesh_sevbq")
+
+[node name="地图" parent="." unique_id=464979666 instance=ExtResource("4_c26x5")]
+
+[node name="草地" type="Node3D" parent="." unique_id=2079615642]
+script = ExtResource("8_grass")
+terrain_path = NodePath("../地图/map/细分雕刻地图2")
+water_path = NodePath("../水面")
+exclusion_paths = Array[NodePath]([NodePath("")])
+distribution_seed = 114514
+blade_height = 0.7999999999999999

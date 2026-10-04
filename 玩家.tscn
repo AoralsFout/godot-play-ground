@@ -1,0 +1,70 @@
+[gd_scene format=3 uid="uid://mr4ldj2e8x5j"]
+
+[ext_resource type="Script" uid="uid://cnmvxws567hts" path="res://玩家.gd" id="1_iy2xn"]
+[ext_resource type="Texture2D" uid="uid://br6jc52hcb7sc" path="res://assets/ui/玩家箭头.svg" id="2_arrow"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_76r4o"]
+height = 1.7431641
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_jyyn8"]
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_kd3ba"]
+material = SubResource("StandardMaterial3D_jyyn8")
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_arrow"]
+transparency = 1
+shading_mode = 0
+albedo_texture = ExtResource("2_arrow")
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_arrow"]
+material = SubResource("StandardMaterial3D_arrow")
+size = Vector2(4, 4)
+
+[sub_resource type="Environment" id="Environment_iy2xn"]
+background_mode = 1
+background_color = Color(1, 1, 1, 1)
+adjustment_enabled = true
+
+[node name="玩家" type="CharacterBody3D" unique_id=24142093]
+script = ExtResource("1_iy2xn")
+
+[node name="第三人称摄像机枢轴" type="Marker3D" parent="." unique_id=546699243]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, 0)
+
+[node name="摄像机俯仰" type="Marker3D" parent="第三人称摄像机枢轴" unique_id=1353933938]
+transform = Transform3D(1, 0, 0, 0, 0.9659258, 0.25881904, 0, -0.25881904, 0.9659258, 0, 0, 0)
+
+[node name="摄像机伸缩臂" type="SpringArm3D" parent="第三人称摄像机枢轴/摄像机俯仰" unique_id=1253596852]
+spring_length = 4.0
+margin = 0.1
+
+[node name="第三人称摄像机" type="Camera3D" parent="第三人称摄像机枢轴/摄像机俯仰/摄像机伸缩臂" unique_id=1324044023]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 4)
+cull_mask = 1048573
+
+[node name="碰撞" type="CollisionShape3D" parent="." unique_id=1390695550]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.1350708, 0)
+shape = SubResource("CapsuleShape3D_76r4o")
+
+[node name="模型" type="MeshInstance3D" parent="." unique_id=2112193050]
+layers = 3
+mesh = SubResource("CapsuleMesh_kd3ba")
+
+[node name="地图指示器" type="Node3D" parent="." unique_id=1137603645]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 95, 0)
+
+[node name="箭头" type="MeshInstance3D" parent="地图指示器" unique_id=1721597863]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 0)
+layers = 2
+cast_shadow = 0
+gi_mode = 0
+mesh = SubResource("PlaneMesh_arrow")
+
+[node name="顶视图摄像机枢轴" type="Marker3D" parent="." unique_id=1793647747]
+transform = Transform3D(1, 0, 0, 0, -4.371139e-08, 1, 0, -1, -4.371139e-08, 0, 100, 0)
+
+[node name="顶视图摄像机" type="Camera3D" parent="顶视图摄像机枢轴" unique_id=1544315659]
+cull_mask = 261122
+environment = SubResource("Environment_iy2xn")
+projection = 1
+size = 40.0

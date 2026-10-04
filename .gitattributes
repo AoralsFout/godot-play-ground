@@ -1,0 +1,2 @@
+# 统一 Git 识别为文本文件的行尾格式。
+* text=auto eol=lf

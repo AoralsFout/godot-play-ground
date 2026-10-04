@@ -1,0 +1,16 @@
+[gd_scene format=3 uid="uid://dxbv6s2sw1fym"]
+
+[ext_resource type="PackedScene" uid="uid://dth46phpux2n5" path="res://assets/model/map/map.blend" id="1_c7s6e"]
+[ext_resource type="Material" uid="uid://d35kwdlj51b6v" path="res://地形海拔材质.tres" id="2_elevation"]
+[ext_resource type="Script" uid="uid://dtikkrdsc0h0q" path="res://树叶.gd" id="3_leaves"]
+
+[node name="map" unique_id=722592549 instance=ExtResource("1_c7s6e")]
+
+[node name="树叶" type="Node3D" parent="." index="50" unique_id=2136341522]
+script = ExtResource("3_leaves")
+wind_speed = 2.5
+fall_speed = 0.30000000000000004
+fall_drift = 0.05
+
+[node name="细分雕刻地图2" parent="." index="95" unique_id=2096176942]
+surface_material_override/0 = ExtResource("2_elevation")

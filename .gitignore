@@ -1,0 +1,3 @@
+# Godot 4 及以上版本专用的忽略规则
+.godot/
+/android/

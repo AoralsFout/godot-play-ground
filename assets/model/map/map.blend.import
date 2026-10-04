@@ -1,0 +1,294 @@
+[remap]
+
+importer="scene"
+importer_version=1
+type="PackedScene"
+uid="uid://dth46phpux2n5"
+path="res://.godot/imported/map.blend-e72adca9517c5364062eab70a7a04a37.scn"
+
+[deps]
+
+source_file="res://assets/model/map/map.blend"
+dest_files=["res://.godot/imported/map.blend-e72adca9517c5364062eab70a7a04a37.scn"]
+
+[params]
+
+nodes/root_type=""
+nodes/root_name=""
+nodes/root_script=null
+mesh_library/use_node_names_as_mesh_names=false
+array_mesh/deduplicate_surfaces=true
+nodes/apply_root_scale=true
+nodes/root_scale=1.0
+nodes/import_as_skeleton_bones=false
+nodes/use_name_suffixes=true
+nodes/use_node_type_suffixes=true
+meshes/ensure_tangents=true
+meshes/generate_lods=true
+meshes/create_shadow_meshes=true
+meshes/light_baking=1
+meshes/lightmap_texel_size=0.2
+meshes/force_disable_compression=false
+skins/use_named_skins=true
+animation/import=false
+animation/fps=30
+animation/trimming=false
+animation/remove_immutable_tracks=false
+animation/import_rest_as_RESET=false
+import_script/path=""
+materials/extract=0
+materials/extract_format=0
+materials/extract_path=""
+_subresources={
+"materials": {
+"基础海拔映射": {
+"use_external/enabled": true,
+"use_external/fallback_path": "",
+"use_external/path": ""
+}
+},
+"nodes": {
+"PATH:人": {
+"import/skip_import": true
+},
+"PATH:原始地图": {
+"import/skip_import": true
+},
+"PATH:平面": {
+"generate/physics": true,
+"mesh_instance/layers": 3,
+"physics/layer": 3,
+"physics/mask": 3
+},
+"PATH:平面_001": {
+"generate/physics": true,
+"mesh_instance/layers": 3,
+"physics/layer": 3,
+"physics/mask": 3
+},
+"PATH:平面_002": {
+"generate/physics": true,
+"mesh_instance/layers": 3,
+"physics/layer": 3,
+"physics/mask": 3
+},
+"PATH:平面_003": {
+"generate/physics": true,
+"mesh_instance/layers": 3,
+"physics/layer": 3,
+"physics/mask": 3
+},
+"PATH:平面_004": {
+"generate/physics": true,
+"mesh_instance/layers": 3,
+"physics/layer": 3,
+"physics/mask": 3
+},
+"PATH:平面_006": {
+"generate/physics": true,
+"mesh_instance/layers": 3,
+"physics/layer": 3,
+"physics/mask": 3
+},
+"PATH:平面_007": {
+"generate/physics": true,
+"mesh_instance/layers": 3,
+"physics/layer": 3,
+"physics/mask": 3
+},
+"PATH:平面_008": {
+"generate/physics": true,
+"mesh_instance/layers": 3,
+"physics/layer": 3,
+"physics/mask": 3
+},
+"PATH:平面_009": {
+"generate/physics": true,
+"mesh_instance/layers": 3,
+"physics/layer": 3,
+"physics/mask": 3
+},
+"PATH:平面_010": {
+"generate/physics": true,
+"mesh_instance/layers": 3,
+"physics/layer": 3,
+"physics/mask": 3
+},
+"PATH:平面_011": {
+"generate/physics": true,
+"mesh_instance/layers": 3,
+"physics/layer": 3,
+"physics/mask": 3
+},
+"PATH:平面_012": {
+"generate/physics": true,
+"mesh_instance/layers": 3,
+"physics/layer": 3,
+"physics/mask": 3
+},
+"PATH:平面_013": {
+"generate/physics": true,
+"mesh_instance/layers": 3,
+"physics/layer": 3,
+"physics/mask": 3
+},
+"PATH:平面_014": {
+"generate/physics": true,
+"mesh_instance/layers": 3,
+"physics/layer": 3,
+"physics/mask": 3
+},
+"PATH:平面_015": {
+"generate/physics": true,
+"mesh_instance/layers": 3,
+"physics/layer": 3,
+"physics/mask": 3
+},
+"PATH:平面_016": {
+"generate/physics": true,
+"mesh_instance/layers": 3,
+"physics/layer": 3,
+"physics/mask": 3
+},
+"PATH:平面_017": {
+"generate/physics": true,
+"mesh_instance/layers": 3,
+"physics/layer": 3,
+"physics/mask": 3
+},
+"PATH:平面_018": {
+"generate/physics": true,
+"mesh_instance/layers": 3,
+"physics/layer": 3,
+"physics/mask": 3
+},
+"PATH:平面_019": {
+"generate/physics": true,
+"mesh_instance/layers": 3,
+"physics/layer": 3,
+"physics/mask": 3
+},
+"PATH:平面_020": {
+"generate/physics": true,
+"mesh_instance/layers": 3,
+"physics/layer": 3,
+"physics/mask": 3
+},
+"PATH:平面_021": {
+"generate/physics": true,
+"mesh_instance/layers": 3,
+"physics/layer": 3,
+"physics/mask": 3
+},
+"PATH:平面_022": {
+"generate/physics": true,
+"mesh_instance/layers": 3,
+"physics/layer": 3,
+"physics/mask": 3
+},
+"PATH:平面_023": {
+"generate/physics": true,
+"mesh_instance/layers": 3,
+"physics/layer": 3,
+"physics/mask": 3
+},
+"PATH:平面_024": {
+"generate/physics": true,
+"mesh_instance/layers": 3,
+"physics/layer": 3,
+"physics/mask": 3
+},
+"PATH:平面_025": {
+"generate/physics": true,
+"mesh_instance/layers": 3,
+"physics/layer": 3,
+"physics/mask": 3
+},
+"PATH:平面_026": {
+"generate/physics": true,
+"mesh_instance/layers": 3,
+"physics/layer": 3,
+"physics/mask": 3
+},
+"PATH:平面_027": {
+"generate/physics": true,
+"mesh_instance/layers": 3,
+"physics/layer": 3,
+"physics/mask": 3
+},
+"PATH:平面_028": {
+"generate/physics": true,
+"mesh_instance/layers": 3,
+"physics/layer": 3,
+"physics/mask": 3
+},
+"PATH:平面_029": {
+"generate/physics": true,
+"mesh_instance/layers": 3,
+"physics/layer": 3,
+"physics/mask": 3
+},
+"PATH:平面_030": {
+"generate/physics": true,
+"mesh_instance/layers": 3,
+"physics/layer": 3,
+"physics/mask": 3
+},
+"PATH:平面_031": {
+"generate/physics": true,
+"mesh_instance/layers": 3,
+"physics/layer": 3,
+"physics/mask": 3
+},
+"PATH:平面_034": {
+"generate/physics": true,
+"mesh_instance/layers": 3,
+"physics/layer": 3,
+"physics/mask": 3
+},
+"PATH:海面": {
+"import/skip_import": true
+},
+"PATH:碎石": {
+"import/skip_import": true
+},
+"PATH:碎石面": {
+"mesh_instance/layers": 0
+},
+"PATH:细分雕刻地图1": {
+"generate/physics": true,
+"import/skip_import": true,
+"mesh_instance/layers": 3,
+"physics/layer": 3,
+"physics/mask": 3,
+"physics/shape_type": 2
+},
+"PATH:细分雕刻地图2": {
+"generate/physics": true,
+"mesh_instance/layers": 3,
+"physics/layer": 3,
+"physics/mask": 3
+}
+}
+}
+blender/nodes/visible=0
+blender/nodes/active_collection_only=false
+blender/nodes/punctual_lights=true
+blender/nodes/cameras=true
+blender/nodes/custom_properties=true
+blender/nodes/modifiers=1
+blender/meshes/vertex_colors=1
+blender/meshes/uvs=true
+blender/meshes/normals=true
+blender/meshes/export_geometry_nodes_instances=false
+blender/meshes/gpu_instances=false
+blender/meshes/tangents=true
+blender/meshes/skins=2
+blender/meshes/export_bones_deforming_mesh_only=false
+blender/materials/unpack_enabled=true
+blender/materials/export_materials=1
+blender/animation/limit_playback=true
+blender/animation/always_sample=true
+blender/animation/group_tracks=true
+gltf/naming_version=2
+gltf/texture_map_mode=1

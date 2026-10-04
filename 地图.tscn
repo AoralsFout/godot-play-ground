@@ -1,0 +1,7 @@
+[gd_scene format=3 uid="uid://dqy28maxtd88x"]
+
+[ext_resource type="PackedScene" uid="uid://dxbv6s2sw1fym" path="res://map.tscn" id="1_nmtyc"]
+
+[node name="地图" type="Node3D" unique_id=464979666]
+
+[node name="map" parent="." unique_id=722592549 instance=ExtResource("1_nmtyc")]

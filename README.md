@@ -9,7 +9,7 @@ Godot 4.7 项目。运行入口为 `scenes/主菜单.tscn`；游戏场景为 `sc
 | `scenes/` | 主菜单、游戏入口，以及 world / player / ui 场景 |
 | `scripts/` | core 会话与主场景逻辑、world 环境、player 控制、ui 界面 |
 | `shaders/` | terrain 地形、water 海面与水下、sky 天空、ui 小地图着色器 |
-| `materials/` | 地形共享材质、体积云天空资源 |
+| `materials/` | 地形共享材质、晴空资源 |
 | `assets/models/` | 游戏使用的 `超大地形.glb` |
 | `assets/ui/` | 图标和小地图玩家箭头 |
 | `source_art/terrain/` | 当前可编辑的 `超大地形.blend`；由 `.gdignore` 排除自动导入 |

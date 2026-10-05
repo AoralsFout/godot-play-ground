@@ -27,6 +27,8 @@ adjustment_enabled = true
 
 [node name="玩家" type="CharacterBody3D" unique_id=24142093]
 script = ExtResource("1_iy2xn")
+move_speed = 100.0
+acceleration = 100.0
 
 [node name="第三人称摄像机枢轴" type="Marker3D" parent="." unique_id=546699243]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, 0)
@@ -66,7 +68,7 @@ transform = Transform3D(1, 0, 0, 0, -4.371139e-08, 1, 0, -1, -4.371139e-08, 0, 1
 
 [node name="顶视图摄像机" type="Camera3D" parent="顶视图摄像机枢轴" unique_id=1544315659]
 cull_mask = 261122
-far = 16000.0
 environment = SubResource("Environment_iy2xn")
 projection = 1
 size = 40.0
+far = 16000.0

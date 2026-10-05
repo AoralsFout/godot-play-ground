@@ -1,6 +1,6 @@
-[gd_resource type="Sky" format=3 uid="uid://bfukxxoo65dha"]
+[gd_resource type="Sky" format=3 uid="uid://c5cssqn4co0rv"]
 
-[ext_resource type="Shader" uid="uid://b88lb8blojt03" path="res://shaders/sky/体积云.gdshader" id="1_cloud"]
+[ext_resource type="Shader" path="res://shaders/sky/体积云.gdshader" id="1_cloud"]
 
 [sub_resource type="FastNoiseLite" id="FastNoiseLite_cloud"]
 noise_type = 3

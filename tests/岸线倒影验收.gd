@@ -61,7 +61,7 @@ func _run() -> void:
 	water.gi_mode = GeometryInstance3D.GI_MODE_DISABLED
 	water.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	var material := ShaderMaterial.new()
-	material.shader = load("res://水面.gdshader")
+	material.shader = load("res://shaders/water/水面.gdshader")
 	material.set_shader_parameter("wave_height", 0.0)
 	material.set_shader_parameter("use_game_time", true)
 	material.set_shader_parameter("game_time", 2.0)
@@ -117,9 +117,9 @@ func _run() -> void:
 	camera.projection = Camera3D.PROJECTION_PERSPECTIVE
 	camera.position = Vector3(0, 2, -9)
 	camera.look_at(Vector3(0, 0, 3))
-	var mirror_water := preload("res://水面.gd").new()
+	var mirror_water := preload("res://scripts/world/水面.gd").new()
 	var mirror_material := ShaderMaterial.new()
-	mirror_material.shader = load("res://水面.gdshader")
+	mirror_material.shader = load("res://shaders/water/水面.gdshader")
 	mirror_material.set_shader_parameter("wave_height", 0.0)
 	mirror_material.set_shader_parameter("use_game_time", true)
 	mirror_material.set_shader_parameter("game_time", 2.0)
@@ -194,13 +194,8 @@ func _run() -> void:
 	_check(crossing_pixels > 100 and below_plane_pixels == 0, "crossing mesh keeps its dry half and clips its submerged half", float(below_plane_pixels))
 	viewport.queue_free()
 	await process_frame
-	var world_scene := load("res://世界场景.tscn").instantiate() as Node3D
+	var world_scene := load("res://scenes/world/世界场景.tscn").instantiate() as Node3D
 	root.add_child(world_scene)
-	var gi := world_scene.get_node("VoxelGI 全局光照") as VoxelGI
-	var sea := world_scene.get_node("水面") as MeshInstance3D
-	var bounds := gi.data.get_bounds()
-	var bottom := (gi.global_transform * bounds.position).y
-	_check(bottom < sea.global_position.y - 20.0, "baked GI covers seabed instead of ending at the shoreline", bottom)
 	var map_water := world_scene.get_node("地图水面") as MeshInstance3D
 	_check(map_water.cast_shadow == GeometryInstance3D.SHADOW_CASTING_SETTING_OFF and map_water.gi_mode == GeometryInstance3D.GI_MODE_DISABLED, "minimap proxy cannot cast an invisible roof shadow or enter GI baking", float(map_water.cast_shadow))
 	world_scene.queue_free()

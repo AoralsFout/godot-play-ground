@@ -42,7 +42,7 @@ func _run() -> void:
 	var shader := Shader.new()
 	# 此测试场景不使用直射光，以测量实际合成着色器的岸线效果。
 	# 无光照模式会绕过透射与自发光的分离处理，从而改变材质效果。
-	shader.code = FileAccess.get_file_as_string("res://水面.gdshader")
+	shader.code = FileAccess.get_file_as_string("res://shaders/water/水面.gdshader")
 	var material := ShaderMaterial.new()
 	material.shader = shader
 	material.set_shader_parameter("use_game_time", true)

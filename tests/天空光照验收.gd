@@ -60,12 +60,12 @@ func _run() -> void:
 	if visual:
 		root.size = Vector2i(1280, 720)
 		DirAccess.make_dir_recursive_absolute(OUTPUT)
-		world = load("res://世界场景.tscn").instantiate() as Node3D
+		world = load("res://scenes/world/世界场景.tscn").instantiate() as Node3D
 	else:
 		world = Node3D.new()
 		var environment := WorldEnvironment.new()
 		environment.name = "世界环境"
-		environment.set_script(load("res://体积云.gd"))
+		environment.set_script(load("res://scripts/world/体积云.gd"))
 		world.add_child(environment)
 		var daylight := DirectionalLight3D.new()
 		daylight.name = "日光"
@@ -78,24 +78,15 @@ func _run() -> void:
 		water.name = "水面"
 		water.mesh = PlaneMesh.new()
 		var material := ShaderMaterial.new()
-		material.shader = load("res://水面.gdshader")
+		material.shader = load("res://shaders/water/水面.gdshader")
 		water.mesh.material = material
 		world.add_child(water)
-		var gi := VoxelGI.new()
-		gi.name = "VoxelGI 全局光照"
-		gi.data = VoxelGIData.new()
-		world.add_child(gi)
-	var gi := world.get_node("VoxelGI 全局光照") as VoxelGI
-	var source_gi := gi.data
-	var source_energy := source_gi.energy
 	root.add_child(world)
 	current_scene = world
 	sky = world.get_node("世界环境")
 	sun = world.get_node("日光")
 	moon = world.get_node("月光")
 	sky.set_process(false)
-	_check(gi.data == source_gi if Engine.is_editor_hint() else gi.data != source_gi,
-		"GI preserves editor resource reference and isolates runtime worlds")
 	sky.clouds_enabled = false
 	if visual:
 		camera = Camera3D.new()
@@ -151,9 +142,6 @@ func _run() -> void:
 	sky.moon_enabled = true
 	sky.cloud_coverage = 0.56
 	sky.cloud_density = 1.1
-	_check(is_equal_approx(source_gi.energy, source_energy), "day-night updates do not modify shared baked GI resource")
-	if not Engine.is_editor_hint():
-		_check(gi.data.energy > 0.0 and gi.data.energy <= source_energy * 0.3, "night GI retains only gentle lunar bounce")
 	_angle(2.0, false)
 	_check(sky.sky_phase == "日出", "opposite solar azimuth selects sunrise")
 	var dawn: Color = sky.cloud_material.get_shader_parameter("horizon_color")

@@ -1,7 +1,7 @@
 extends SceneTree
 ## 运行命令：Godot --headless --path . --script res://tests/水面验收.gd
 
-const WATER_SCRIPT := preload("res://水面.gd")
+const WATER_SCRIPT := preload("res://scripts/world/水面.gd")
 var failures := 0
 
 
@@ -22,7 +22,7 @@ func _run() -> void:
 	root.add_child(world)
 	var water := WATER_SCRIPT.new()
 	var material := ShaderMaterial.new()
-	material.shader = load("res://水面.gdshader")
+	material.shader = load("res://shaders/water/水面.gdshader")
 	material.set_shader_parameter("use_game_time", true)
 	water.water_material = material
 	water.position.y = 15.0

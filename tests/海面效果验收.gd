@@ -52,9 +52,9 @@ func _run() -> void:
 	pattern.shader = pattern_shader
 	bed.material_override = pattern
 	viewport.add_child(bed)
-	var water := preload("res://水面.gd").new()
+	var water := preload("res://scripts/world/水面.gd").new()
 	var material := ShaderMaterial.new()
-	material.shader = load("res://水面.gdshader")
+	material.shader = load("res://shaders/water/水面.gdshader")
 	material.set_shader_parameter("use_game_time", true)
 	material.set_shader_parameter("game_time", 2.0)
 	water.water_material = material

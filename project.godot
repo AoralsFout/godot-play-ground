@@ -11,13 +11,13 @@ config_version=5
 [application]
 
 config/name="PlayGround"
-run/main_scene="res://主菜单.tscn"
+run/main_scene="res://scenes/主菜单.tscn"
 config/features=PackedStringArray("4.7", "Forward Plus")
-config/icon="res://icon.svg"
+config/icon="res://assets/ui/icon.svg"
 
 [autoload]
 
-Session="*res://游戏会话.gd"
+Session="*res://scripts/core/游戏会话.gd"
 
 [display]
 

@@ -25,7 +25,7 @@ func _settle() -> void:
 func _run() -> void:
 	var world := Node3D.new()
 	root.add_child(world)
-	var scene: PackedScene = load("res://玩家.tscn")
+	var scene: PackedScene = load("res://scenes/player/玩家.tscn")
 	var player: CharacterBody3D = scene.instantiate()
 	world.add_child(player)
 	player.set_physics_process(false)

@@ -44,7 +44,7 @@ func _capture(name: String) -> Image:
 func _run() -> void:
 	root.size = Vector2i(1280, 720)
 	DirAccess.make_dir_recursive_absolute(OUTPUT)
-	var game := load("res://根节点.tscn").instantiate() as Node3D
+	var game := load("res://scenes/根节点.tscn").instantiate() as Node3D
 	root.add_child(game)
 	current_scene = game
 	game.set_process(false)

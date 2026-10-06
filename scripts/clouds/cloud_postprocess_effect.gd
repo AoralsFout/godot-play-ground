@@ -128,6 +128,7 @@ func _render_callback(callback_type: int, render_data: RenderData) -> void:
 	# RenderSceneBuffers 负责随分辨率/视图变化清理这些纹理。
 	buffers.create_texture("nubis_post", "cloud", RenderingDevice.DATA_FORMAT_R16G16B16A16_SFLOAT, usage, RenderingDevice.TEXTURE_SAMPLES_1, size, buffers.get_view_count(), 1, false, false)
 	buffers.create_texture("nubis_post", "depth", RenderingDevice.DATA_FORMAT_R32_SFLOAT, usage, RenderingDevice.TEXTURE_SAMPLES_1, size, buffers.get_view_count(), 1, false, false)
+	buffers.create_texture("nubis_post", "moon", RenderingDevice.DATA_FORMAT_R16_SFLOAT, usage, RenderingDevice.TEXTURE_SAMPLES_1, size, buffers.get_view_count(), 1, false, false)
 	buffers.create_texture("nubis_post", "seed", RenderingDevice.DATA_FORMAT_R16G16B16A16_SFLOAT, usage, RenderingDevice.TEXTURE_SAMPLES_1, shaft_size, buffers.get_view_count(), 1, false, false)
 	buffers.create_texture("nubis_post", "blur", RenderingDevice.DATA_FORMAT_R16G16B16A16_SFLOAT, usage, RenderingDevice.TEXTURE_SAMPLES_1, shaft_size, buffers.get_view_count(), 1, false, false)
 	var map_rid := _texture_rid(textures[0], _fallback_2d)
@@ -147,6 +148,7 @@ func _render_callback(callback_type: int, render_data: RenderData) -> void:
 		var depth := buffers.get_texture_slice("nubis_post", "depth", view, 0, 1, 1)
 		var seed := buffers.get_texture_slice("nubis_post", "seed", view, 0, 1, 1)
 		var blur := buffers.get_texture_slice("nubis_post", "blur", view, 0, 1, 1)
+		var moon := buffers.get_texture_slice("nubis_post", "moon", view, 0, 1, 1)
 		var uniforms: Array[RDUniform] = [
 			_image_uniform(0, buffers.get_color_layer(view)),
 			_sampler_uniform(1, _depth_sampler, buffers.get_depth_layer(view)),
@@ -157,6 +159,7 @@ func _render_callback(callback_type: int, render_data: RenderData) -> void:
 			_buffer_uniform(7, _parameter_buffer), _image_uniform(8, seed),
 			_sampler_uniform(9, _linear_sampler, seed), _image_uniform(10, blur),
 			_sampler_uniform(11, _linear_sampler, blur),
+			_image_uniform(12, moon),
 		]
 		var compute_list := -1 if profiling_enabled else _rd.compute_list_begin()
 		for pass_index in range(4):

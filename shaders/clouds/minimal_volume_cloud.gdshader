@@ -32,8 +32,9 @@ void fragment() {
 			ray_limit = min(ray_limit, length(surface_view.xyz / surface_view.w));
 		}
 	}
-	vec4 cloud = cloud_raymarch(ray_origin, ray_direction, ray_limit, pixel_ray_width);
-	vec3 radiance = cloud_post_lighting(cloud.x, cloud.y, cloud.z, ray_origin, ray_direction);
+	float lunar_light;
+	vec4 cloud = cloud_raymarch(ray_origin, ray_direction, ray_limit, pixel_ray_width, lunar_light);
+	vec3 radiance = cloud_post_lighting(cloud.x, lunar_light, cloud.y, cloud.z, ray_origin, ray_direction);
 	float atmosphere_blend = cloud_atmospheric_blend(cloud.z, ray_origin, ray_direction);
 	vec3 sky = cloud_sky_background(ray_direction, ray_origin, normalize(sun_direction), sky_style);
 	ALBEDO = mix(radiance, sky, atmosphere_blend);

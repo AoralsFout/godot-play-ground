@@ -14,7 +14,7 @@ const SOURCES := {
 	"res://shaders/clouds/cloud_math.gdshaderinc": preload("res://shaders/clouds/cloud_math.gdshaderinc"),
 }
 
-const PASS_BINDINGS := [[1, 2, 3, 4, 5, 6, 7], [1, 2, 7, 8], [7, 9, 10], [0, 1, 2, 3, 7, 9, 11]]
+const PASS_BINDINGS := [[1, 2, 3, 4, 5, 6, 7, 12], [1, 2, 7, 8], [7, 9, 10], [0, 1, 2, 3, 7, 9, 11, 12]]
 
 const HEADER := """#version 450
 layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
@@ -31,6 +31,7 @@ layout(rgba16f, set=0, binding=8) uniform image2D shaft_seed;
 layout(set=0, binding=9) uniform sampler2D shaft_seed_texture;
 layout(rgba16f, set=0, binding=10) uniform image2D shaft_blur;
 layout(set=0, binding=11) uniform sampler2D shaft_blur_texture;
+layout(r16f, set=0, binding=12) uniform image2D moon_buffer;
 """
 
 const SCREEN_FUNCTIONS := """
@@ -38,8 +39,8 @@ vec3 post_view_ray(vec2 uv) {
 	vec4 near_view = INV_PROJECTION_MATRIX * vec4(uv * 2.0 - 1.0, 1.0, 1.0);
 	return normalize((INV_VIEW_MATRIX * vec4(normalize(near_view.xyz / near_view.w), 0.0)).xyz);
 }
-vec2 post_sun_uv() {
-	vec4 clip_position = PROJECTION_MATRIX * inverse(INV_VIEW_MATRIX) * vec4(normalize(sun_direction), 0.0);
+vec2 post_light_uv(vec3 light_direction) {
+	vec4 clip_position = PROJECTION_MATRIX * inverse(INV_VIEW_MATRIX) * vec4(normalize(light_direction), 0.0);
 	return clip_position.w > 0.00001 ? clip_position.xy / clip_position.w * 0.5 + 0.5 : vec2(-100.0);
 }
 bool post_inside(vec2 uv) {
@@ -67,63 +68,70 @@ void main() {
 	vec2 texel = 1.0 / vec2(size);
 	float pixel_width = max(length(post_view_ray(uv + vec2(texel.x, 0.0)) - direction),
 		length(post_view_ray(uv + vec2(0.0, texel.y)) - direction));
-	vec4 cloud = cloud_raymarch(CAMERA_POSITION_WORLD, direction, post_scene_distance(uv), pixel_width);
+	float lunar_light;
+	vec4 cloud = cloud_raymarch(CAMERA_POSITION_WORLD, direction, post_scene_distance(uv), pixel_width, lunar_light);
 	float atmosphere = cloud.w > 0.00001 ? cloud_atmospheric_blend(cloud.z, CAMERA_POSITION_WORLD, direction) : 0.0;
 	// PDF 100：R=直接光强度 G=大气混合 B=环境光强度 A=不透明度。
 	imageStore(cloud_buffer, pixel, vec4(cloud.x, atmosphere, cloud.y, cloud.w));
 	imageStore(cloud_depth, pixel, vec4(cloud.z, 0.0, 0.0, 0.0));
+	imageStore(moon_buffer, pixel, vec4(lunar_light, 0.0, 0.0, 0.0));
 }
 """
 
 const SEED_PASS := """
+float post_shaft_highlight(vec2 uv, vec3 light_direction, float energy) {
+	if (!light_shafts_enabled || light_shaft_strength <= 0.0 || energy <= 0.0) { return 0.0; }
+	vec2 light_uv = post_light_uv(light_direction);
+	float screen_fade = 1.0 - smoothstep(0.5, 0.85, max(abs(light_uv.x - 0.5), abs(light_uv.y - 0.5)));
+	if (screen_fade <= 0.0 || !cloud_sun_visible(CAMERA_POSITION_WORLD, normalize(light_direction))) { return 0.0; }
+	// 反向查找靠近光源的位置，让太阳/月亮的高光各自向外偏移。
+	vec2 input_uv = light_uv + (uv - light_uv) / (1.0 + light_shaft_offset);
+	if (!post_inside(input_uv) || textureLod(scene_depth, input_uv, 0.0).r > 0.0) { return 0.0; }
+	ivec2 cloud_size = imageSize(cloud_buffer);
+	ivec2 cloud_pixel = clamp(ivec2(input_uv * vec2(cloud_size)), ivec2(0), cloud_size - 1);
+	float opacity = imageLoad(cloud_buffer, cloud_pixel).a;
+	float alignment = max(dot(post_view_ray(input_uv), normalize(light_direction)), 0.0);
+	float exponent = log(0.5) / log(cos(light_shaft_spread * PI / 180.0));
+	return pow(alignment, exponent) * pow(max(1.0 - opacity, 0.0), 1.5) * screen_fade;
+}
 void main() {
 	ivec2 pixel = ivec2(gl_GlobalInvocationID.xy);
 	ivec2 size = imageSize(shaft_seed);
 	if (any(greaterThanEqual(pixel, size))) { return; }
-	float highlight = 0.0;
-	vec2 sun_uv = post_sun_uv();
-	float screen_fade = 1.0 - smoothstep(0.5, 0.85, max(abs(sun_uv.x - 0.5), abs(sun_uv.y - 0.5)));
-	if (light_shafts_enabled && light_shaft_strength > 0.0 && screen_fade > 0.0) {
-		vec2 uv = (vec2(pixel) + 0.5) / vec2(size);
-		// 输出向外偏移的高光：反向查找略靠近太阳的输入位置。
-		vec2 input_uv = sun_uv + (uv - sun_uv) / (1.0 + light_shaft_offset);
-		if (post_inside(input_uv) && textureLod(scene_depth, input_uv, 0.0).r <= 0.0) {
-			ivec2 cloud_size = imageSize(cloud_buffer);
-			ivec2 cloud_pixel = clamp(ivec2(input_uv * vec2(cloud_size)), ivec2(0), cloud_size - 1);
-			float opacity = imageLoad(cloud_buffer, cloud_pixel).a;
-			float alignment = max(dot(post_view_ray(input_uv), normalize(sun_direction)), 0.0);
-			float visible = cloud_sun_visible(CAMERA_POSITION_WORLD, normalize(sun_direction)) ? 1.0 : 0.0;
-			float exponent = log(0.5) / log(cos(light_shaft_spread * PI / 180.0));
-			// 加强厚云与云隙对比，半透明云边仍连续透光。
-			highlight = pow(alignment, exponent) * pow(max(1.0 - opacity, 0.0), 1.5) * visible * screen_fade;
-		}
-	}
-	imageStore(shaft_seed, pixel, vec4(highlight, 0.0, 0.0, 1.0));
+	vec2 uv = (vec2(pixel) + 0.5) / vec2(size);
+	vec2 highlights = vec2(post_shaft_highlight(uv, sun_direction, sun_intensity),
+		post_shaft_highlight(uv, moon_direction, moon_intensity));
+	imageStore(shaft_seed, pixel, vec4(highlights, 0.0, 1.0));
 }
 """
 
 const BLUR_PASS := """
+float post_blur_shafts(vec2 uv, vec3 light_direction, float energy, int channel) {
+	vec2 light_uv = post_light_uv(light_direction);
+	if (!light_shafts_enabled || light_shaft_strength <= 0.0 || energy <= 0.0 || light_uv.x <= -99.0) { return 0.0; }
+	float intensity = 0.0;
+	float weights = 0.0;
+	for (int index = 0; index < 64; index++) {
+		if (index >= light_shaft_samples) { break; }
+		float t = float(index) / max(float(light_shaft_samples - 1), 1.0);
+		vec2 sample_uv = mix(uv, light_uv, t * light_shaft_length);
+		float weight = exp(-t * 1.2);
+		if (post_inside(sample_uv)) {
+			vec2 seed = textureLod(shaft_seed_texture, sample_uv, 0.0).rg;
+			intensity += (channel == 0 ? seed.r : seed.g) * weight;
+		}
+		weights += weight;
+	}
+	return intensity / max(weights, 0.00001);
+}
 void main() {
 	ivec2 pixel = ivec2(gl_GlobalInvocationID.xy);
 	ivec2 size = imageSize(shaft_blur);
 	if (any(greaterThanEqual(pixel, size))) { return; }
 	vec2 uv = (vec2(pixel) + 0.5) / vec2(size);
-	vec2 sun_uv = post_sun_uv();
-	float intensity = 0.0;
-	float weights = 0.0;
-	if (light_shafts_enabled && light_shaft_strength > 0.0 && sun_uv.x > -99.0) {
-		for (int index = 0; index < 64; index++) {
-			if (index >= light_shaft_samples) { break; }
-			float t = float(index) / max(float(light_shaft_samples - 1), 1.0);
-			vec2 sample_uv = mix(uv, sun_uv, t * light_shaft_length);
-			float weight = exp(-t * 1.2);
-			if (post_inside(sample_uv)) {
-				intensity += textureLod(shaft_seed_texture, sample_uv, 0.0).r * weight;
-			}
-			weights += weight;
-		}
-	}
-	imageStore(shaft_blur, pixel, vec4(intensity / max(weights, 0.00001), 0.0, 0.0, 1.0));
+	vec2 intensity = vec2(post_blur_shafts(uv, sun_direction, sun_intensity, 0),
+		post_blur_shafts(uv, moon_direction, moon_intensity, 1));
+	imageStore(shaft_blur, pixel, vec4(intensity, 0.0, 1.0));
 }
 """
 
@@ -136,11 +144,12 @@ void main() {
 	vec3 direction = post_view_ray(uv);
 	vec4 cloud = imageLoad(cloud_buffer, pixel);
 	float representative_distance = imageLoad(cloud_depth, pixel).r;
-	vec3 radiance = cloud_post_lighting(cloud.r, cloud.b, representative_distance, CAMERA_POSITION_WORLD, direction);
+	float lunar_light = imageLoad(moon_buffer, pixel).r;
+	vec3 radiance = cloud_post_lighting(cloud.r, lunar_light, cloud.b, representative_distance, CAMERA_POSITION_WORLD, direction);
 	vec3 sky = cloud_sky_background(direction, CAMERA_POSITION_WORLD, normalize(sun_direction), sky_style);
 	vec4 scene = imageLoad(scene_color, pixel);
 	vec3 result = mix(scene.rgb, mix(radiance, sky, cloud.g), cloud.a);
-	float mask = textureLod(shaft_blur_texture, uv, 0.0).r;
+	vec2 masks = textureLod(shaft_blur_texture, uv, 0.0).rg;
 	// 终点取几何/云的较近深度，Mie 在远距离才启用。
 	// 云前空气已经按深度截断，不能再乘云透射率，否则厚云前的光束会被抹掉。
 	float distance_limit = post_scene_distance(uv);
@@ -148,15 +157,16 @@ void main() {
 	if (cloud.a > 0.00001) {
 		distance_limit = mix(distance_limit, min(distance_limit, representative_distance), cloud.a);
 	}
-	vec3 shafts = cloud_mie_shafts(mask, distance_limit, CAMERA_POSITION_WORLD, direction);
+	vec3 shafts = cloud_mie_shafts(masks, distance_limit, CAMERA_POSITION_WORLD, direction);
 	result += shafts;
 	if (post_debug_view == 1) { result = vec3(cloud.r / (1.0 + cloud.r)); }
 	if (post_debug_view == 2) { result = vec3(cloud.g); }
 	if (post_debug_view == 3) { result = vec3(cloud.b / (1.0 + cloud.b)); }
 	if (post_debug_view == 4) { result = vec3(cloud.a); }
-	if (post_debug_view == 5) { result = vec3(mask); }
-	if (post_debug_view == 6) { result = vec3(textureLod(shaft_seed_texture, uv, 0.0).r); }
+	if (post_debug_view == 5) { result = vec3(max(masks.x, masks.y)); }
+	if (post_debug_view == 6) { vec2 seed = textureLod(shaft_seed_texture, uv, 0.0).rg; result = vec3(max(seed.x, seed.y)); }
 	if (post_debug_view == 7) { result = shafts / (vec3(1.0) + shafts); }
+	if (post_debug_view == 8) { result = vec3(lunar_light / (1.0 + lunar_light)); }
 	imageStore(scene_color, pixel, vec4(result, scene.a));
 }
 """

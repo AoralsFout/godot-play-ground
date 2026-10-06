@@ -13,6 +13,10 @@ uniform vec4 cloud_color : source_color = vec4(0.95, 0.97, 1.0, 1.0);
 uniform vec3 sun_direction = vec3(-0.57922797, 0.57357644, 0.57922797);
 uniform vec4 sun_color : source_color = vec4(1.0, 0.95, 0.88, 1.0);
 uniform float sun_intensity : hint_range(0.0, 5.0) = 1.8;
+uniform vec3 moon_direction = vec3(0.0, 1.0, 0.0);
+uniform vec4 moon_color : source_color = vec4(0.76, 0.84, 1.0, 1.0);
+// 控制器已应用夜间/地平线/开关权重；白天为零，不执行月光密度查询。
+uniform float moon_intensity : hint_range(0.0, 3.0) = 0.0;
 uniform vec4 ambient_color : source_color = vec4(0.65, 0.75, 1.0, 1.0);
 uniform float ambient_intensity : hint_range(0.0, 1.0) = 0.25;
 uniform bool self_shadow = true;
@@ -32,11 +36,10 @@ vec3 cloud_light_kernel(int index) {
 	return vec3(-0.16852403, 0.14748697, 0.97460106);
 }
 
-float sample_sun_optical_depth(vec3 sample_position, float view_step_length, float view_mip, float view_detail, float view_opacity, float optical_depth_cutoff) {
-	vec3 direction_to_sun = normalize(sun_direction);
-	// 太阳步幅跟随视线细步，预算决定近处范围，不再均分整条云壳光路。
+float sample_light_optical_depth(vec3 sample_position, vec3 direction_to_light, float view_step_length, float view_mip, float view_detail, float view_opacity, float optical_depth_cutoff) {
+	// 光照步幅跟随视线细步，预算决定近处范围，不再均分整条云壳光路。
 	float light_step_length = max(view_step_length, 0.1);
-	vec4 light_intervals = intersect_cloud_shell(sample_position, direction_to_sun, light_step_length * float(light_steps));
+	vec4 light_intervals = intersect_cloud_shell(sample_position, direction_to_light, light_step_length * float(light_steps));
 	if (cloud_shell_length(light_intervals) <= 0.0) {
 		return 0.0;
 	}
@@ -56,8 +59,8 @@ float sample_sun_optical_depth(vec3 sample_position, float view_step_length, flo
 		float light_mip = view_mip;
 		if (light_low_frequency) {
 			vec3 kernel = cloud_light_kernel(light_index);
-			// 核投到太阳法平面，保证锥体围绕光轴展开，无参考轴切换。
-			kernel -= direction_to_sun * dot(kernel, direction_to_sun);
+			// 核投到光源法平面，保证锥体围绕光轴展开，无参考轴切换。
+			kernel -= direction_to_light * dot(kernel, direction_to_light);
 			float cone_radius = light_step_length * float(light_index) * (1.0 + float(light_index) / float(light_steps));
 			cone_offset = kernel * cone_radius;
 			// 真正采样 mip，覆盖锥体足迹；每两步额外提升约一个层级。
@@ -72,7 +75,7 @@ float sample_sun_optical_depth(vec3 sample_position, float view_step_length, flo
 			if (exit_distance <= entry) {
 				continue;
 			}
-			vec3 light_position = sample_position + direction_to_sun * ((entry + exit_distance) * 0.5) + cone_offset;
+			vec3 light_position = sample_position + direction_to_light * ((entry + exit_distance) * 0.5) + cone_offset;
 			float light_density = sample_cloud_density_lod(light_position, 3, view_detail, light_mip, erosion_weight) * density_multiplier;
 			optical_depth += light_density * extinction * (exit_distance - entry);
 		}
@@ -83,17 +86,37 @@ float sample_sun_optical_depth(vec3 sample_position, float view_step_length, flo
 	return optical_depth;
 }
 
-// 空域/密度/太阳查询复用原步进路径；不在这里读取场景纹理或完成颜色合成。
-vec4 cloud_raymarch(vec3 ray_origin, vec3 ray_direction, float ray_limit, float pixel_ray_width) {
-	float cos_angle = clamp(dot(ray_direction, normalize(sun_direction)), -1.0, 1.0);
+// 两个方向光共享自阴影、入散射和多重散射模型，颜色留到合成时分别应用。
+float cloud_direct_sample(vec3 position, vec3 light_direction, float intensity, float away, float phase,
+	float step_length, float mip, float detail, float opacity) {
+	if (intensity <= 0.0 || !cloud_sun_visible(position, light_direction)) { return 0.0; }
+	float cutoff = nubis_lighting && multi_scatter_strength > 0.0 && away > 0.0 ? 21.2 : 5.3;
+	float optical_depth = self_shadow ? sample_light_optical_depth(position, light_direction, step_length, mip, detail, opacity, cutoff) : 0.0;
+	float probability = 1.0;
+	if (nubis_lighting && in_scatter_strength > 0.0 && away > 0.0) {
+		float lodded_density = clamp(sample_cloud_density_lod(position, 3, detail, mip + 2.0, 0.0) * density_multiplier, 0.0, 1.0);
+		probability = cloud_in_scatter_probability(lodded_density, cloud_height_fraction(position), away);
+	}
+	float horizon = sky_link_lighting ? smoothstep(-0.04, 0.08, cloud_solar_elevation(position, light_direction)) : 1.0;
+	return intensity * horizon * phase * cloud_light_attenuation(optical_depth, away) * probability;
+}
+
+// 空域与密度只步进一次；月光输出单独的标量，不与太阳颜色混合。
+vec4 cloud_raymarch(vec3 ray_origin, vec3 ray_direction, float ray_limit, float pixel_ray_width, out float lunar_light) {
+	vec3 solar_direction = normalize(sun_direction);
+	vec3 lunar_direction = normalize(moon_direction);
+	float cos_angle = clamp(dot(ray_direction, solar_direction), -1.0, 1.0);
 	float away_from_sun = cloud_away_from_sun(cos_angle);
 	float directional_scattering = nubis_lighting ? cloud_directional_scattering(cos_angle) : 1.0;
-	float optical_depth_cutoff = nubis_lighting && multi_scatter_strength > 0.0 && away_from_sun > 0.0 ? 21.2 : 5.3;
+	float lunar_cos = clamp(dot(ray_direction, lunar_direction), -1.0, 1.0);
+	float away_from_moon = cloud_away_from_sun(lunar_cos);
+	float lunar_scattering = nubis_lighting ? cloud_directional_scattering(lunar_cos) : 1.0;
 	vec4 intervals = intersect_cloud_shell(ray_origin, ray_direction, ray_limit);
 	float cloud_length = cloud_shell_length(intervals);
 
 	float transmittance = 1.0;
 	float accumulated_direct = 0.0;
+	float accumulated_moon = 0.0;
 	float accumulated_ambient = 0.0;
 	float weighted_distance = 0.0;
 	float half_opacity_distance = -1.0;
@@ -157,29 +180,15 @@ vec4 cloud_raymarch(vec3 ray_origin, vec3 ray_direction, float ray_limit, float 
 			}
 			empty_samples = 0;
 			float segment_transmittance = exp(-density * extinction * segment_length);
-			float sun_optical_depth = 0.0;
-			bool sun_visible = cloud_sun_visible(sample_position, normalize(sun_direction));
-			if (self_shadow && sun_intensity > 0.0 && sun_visible) {
-				sun_optical_depth = sample_sun_optical_depth(sample_position, step_length, view_mip, detail_factor, 1.0 - transmittance, optical_depth_cutoff);
-			}
-			float attenuation = cloud_light_attenuation(sun_optical_depth, away_from_sun);
-			float in_scatter_probability = 1.0;
-			if (nubis_lighting && in_scatter_strength > 0.0 && away_from_sun > 0.0 && sun_intensity > 0.0 && sun_visible) {
-				// 入散射使用真正的低 mip 基础形状，避免删 octave 改变密度模型。
-				float lodded_density = clamp(sample_cloud_density_lod(sample_position, 3, detail_factor, view_mip + 2.0, 0.0) * density_multiplier, 0.0, 1.0);
-				float height_fraction = cloud_height_fraction(sample_position);
-				in_scatter_probability = cloud_in_scatter_probability(lodded_density, height_fraction, away_from_sun);
-			}
-			// 保留独立环境补光；太阳贡献组合原文三项，颜色和亮度不截断 HDR。
+			// 环境补光独立，太阳与月亮分别使用各自方向的光路。
 			float solar_elevation = cloud_solar_elevation(sample_position, normalize(sun_direction));
 			float daylight = smoothstep(-0.10, 0.20, solar_elevation);
 			float ambient_scale = sky_link_lighting ? mix(0.08, 1.0, daylight) : 1.0;
-			float solar_scale = sun_visible ? 1.0 : 0.0;
-			if (sky_link_lighting) {
-				solar_scale *= smoothstep(-0.04, 0.08, solar_elevation);
-			}
 			float contribution = transmittance * (1.0 - segment_transmittance);
-			accumulated_direct += contribution * sun_intensity * solar_scale * directional_scattering * attenuation * in_scatter_probability;
+			accumulated_direct += contribution * cloud_direct_sample(sample_position, solar_direction, sun_intensity,
+				away_from_sun, directional_scattering, step_length, view_mip, detail_factor, 1.0 - transmittance);
+			accumulated_moon += contribution * cloud_direct_sample(sample_position, lunar_direction, moon_intensity,
+				away_from_moon, lunar_scattering, step_length, view_mip, detail_factor, 1.0 - transmittance);
 			accumulated_ambient += contribution * ambient_intensity * ambient_scale;
 			weighted_distance += contribution * sample_distance;
 			float previous_transmittance = transmittance;
@@ -195,6 +204,7 @@ vec4 cloud_raymarch(vec3 ray_origin, vec3 ray_direction, float ray_limit, float 
 		}
 	}
 	float opacity = 1.0 - transmittance;
+	lunar_light = accumulated_moon / max(opacity, 0.00001);
 	float representative_distance = half_opacity_distance >= 0.0 ? half_opacity_distance : weighted_distance / max(opacity, 0.00001);
 	// RG 是非预乘直接光/环境光，B 是米制代表深度，A 是不透明度。
 	return vec4(accumulated_direct / max(opacity, 0.00001), accumulated_ambient / max(opacity, 0.00001), representative_distance, opacity);

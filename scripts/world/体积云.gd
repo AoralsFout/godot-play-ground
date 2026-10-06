@@ -120,9 +120,9 @@ const CLOUD_SHADER = preload("res://shaders/clouds/minimal_volume_cloud.gdshader
 	set(value):
 		atmosphere_mie_density = clampf(value, 0.0, 3.0)
 		_refresh_cloud()
-@export_enum("Final", "Direct light", "Atmosphere blend", "Ambient light", "Opacity", "Light shafts", "Shaft highlight", "Mie contribution") var post_debug_view: int = 0:
+@export_enum("Final", "Direct light", "Atmosphere blend", "Ambient light", "Opacity", "Light shafts", "Shaft highlight", "Mie contribution", "Moon direct light") var post_debug_view: int = 0:
 	set(value):
-		post_debug_view = clampi(value, 0, 7)
+		post_debug_view = clampi(value, 0, 8)
 		_refresh_cloud()
 
 @export_group("3D noise")
@@ -194,6 +194,20 @@ const CLOUD_SHADER = preload("res://shaders/clouds/minimal_volume_cloud.gdshader
 @export var sun: DirectionalLight3D:
 	set(value):
 		sun = value
+		_refresh_cloud()
+## 留空时跟随天空控制器配置的月光节点。
+@export var moon: DirectionalLight3D:
+	set(value):
+		moon = value
+		_refresh_cloud()
+@export var moon_lighting_enabled := true:
+	set(value):
+		moon_lighting_enabled = value
+		_refresh_cloud()
+## 月光直射与月光束强度；夜间环境补光仍由天空控制器管理。
+@export_range(0.0, 3.0, 0.01) var moon_light_multiplier := 1.0:
+	set(value):
+		moon_light_multiplier = clampf(value, 0.0, 3.0)
 		_refresh_cloud()
 @export_color_no_alpha var ambient_color := Color(0.65, 0.75, 1.0):
 	set(value):
@@ -451,10 +465,27 @@ func _wind_direction() -> Vector3:
 
 func _sync_lighting() -> void:
 	var light := sun if is_instance_valid(sun) else get_node_or_null("../日光") as DirectionalLight3D
+	var moon_light := moon
+	if not is_instance_valid(moon_light):
+		var moon_path_value: Variant = _environment_node.get("moon_path")
+		if moon_path_value is NodePath:
+			moon_light = _environment_node.get_node_or_null(moon_path_value) as DirectionalLight3D
+		else:
+			moon_light = get_node_or_null("../月光") as DirectionalLight3D
+	var solar_direction := light.global_basis.z.normalized() if light != null else Vector3.UP
+	var solar_elevation := rad_to_deg(asin(clampf(solar_direction.y, -1.0, 1.0)))
+	# 白天精确为零；日落后到太阳 -6° 平滑开启，日出时反向淡出。
+	var night_weight := 1.0 - smoothstep(-6.0, 0.0, solar_elevation)
+	var lunar_intensity := 0.0
+	if moon_lighting_enabled and is_instance_valid(moon_light) and moon_light.is_visible_in_tree() and moon_light.global_basis.z.y > 0.0:
+		lunar_intensity = moon_light.light_energy * moon_light_multiplier * night_weight
 	var values := {
-		"sun_direction": light.global_basis.z.normalized() if light != null else Vector3.UP,
+		"sun_direction": solar_direction,
 		"sun_color": light.light_color if light != null else Color.WHITE,
 		"sun_intensity": light.light_energy if light != null and light.is_visible_in_tree() else 0.0,
+		"moon_direction": moon_light.global_basis.z.normalized() if is_instance_valid(moon_light) else Vector3.UP,
+		"moon_color": moon_light.light_color if is_instance_valid(moon_light) else Color(0.76, 0.84, 1.0),
+		"moon_intensity": lunar_intensity,
 		"ambient_color": _environment.ambient_light_color * ambient_color,
 		"ambient_intensity": _environment.ambient_light_energy * ambient_intensity,
 		"noise_motion_offset": _noise_motion_offset,

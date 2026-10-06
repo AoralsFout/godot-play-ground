@@ -37,12 +37,15 @@ func _run() -> void:
 	var world := game.get_node("世界场景")
 	world.get_node("世界环境").sun_auto_rotate = false
 	var clouds := world.get_node("体积云")
+	# 本验收只比较太阳光束，月光的夜间渲染由月光专项验收覆盖。
+	clouds.moon_lighting_enabled = false
 	# 固定天气夹具，避免编辑器保存的昼夜/云形调参改变光束回归基准。
 	clouds.planet_radius = 6371000.0
 	clouds.cloud_top = 9100.0
 	clouds.cloud_map_center = Vector2.ZERO
 	clouds.coverage_amount = 0.5
 	clouds.erosion_strength = 0.2
+	clouds.density_multiplier = 1.0
 	var fixture_sun := world.get_node("日光") as DirectionalLight3D
 	fixture_sun.look_at(fixture_sun.global_position - Vector3(0.6665324, 0.42758733, 0.6106581))
 	clouds.animation_enabled = false

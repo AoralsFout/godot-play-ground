@@ -48,18 +48,19 @@ float cloud_atmospheric_blend(float representative_distance, vec3 origin, vec3 d
 	return haze_strength * (1.0 - exp(-optical_depth.x - optical_depth.y));
 }
 
-vec3 cloud_post_lighting(float direct_intensity, float ambient_intensity_value, float representative_distance, vec3 origin, vec3 direction) {
+vec3 cloud_post_lighting(float direct_intensity, float lunar_intensity, float ambient_intensity_value, float representative_distance, vec3 origin, vec3 direction) {
 	vec3 position = origin + direction * representative_distance;
 	float elevation = cloud_solar_elevation(position, normalize(sun_direction));
 	float daylight = smoothstep(-0.10, 0.20, elevation);
 	vec3 solar_tint = sky_link_lighting ? cloud_solar_tint(elevation) : vec3(1.0);
 	vec3 ambient_tint = sky_link_lighting ? mix(vec3(0.45, 0.5, 0.8), vec3(1.0), daylight) : vec3(1.0);
 	return cloud_color.rgb * (sun_color.rgb * solar_tint * direct_intensity
+		+ moon_color.rgb * lunar_intensity
 		+ ambient_color.rgb * ambient_tint * ambient_intensity_value);
 }
 
-vec3 cloud_mie_shafts(float mask, float distance_to_point, vec3 origin, vec3 direction) {
-	if (!light_shafts_enabled || mask <= 0.0 || light_shaft_strength <= 0.0 || sun_intensity <= 0.0) {
+vec3 cloud_mie_shafts(vec2 masks, float distance_to_point, vec3 origin, vec3 direction) {
+	if (!light_shafts_enabled || max(masks.x, masks.y) <= 0.0 || light_shaft_strength <= 0.0 || max(sun_intensity, moon_intensity) <= 0.0) {
 		return vec3(0.0);
 	}
 	// 在远处才启用；近物体截断空气段，光束不覆盖邻近景物。
@@ -78,6 +79,8 @@ vec3 cloud_mie_shafts(float mask, float distance_to_point, vec3 origin, vec3 dir
 	float elevation = cloud_solar_elevation(origin, normalize(sun_direction));
 	float daylight = smoothstep(-0.04, 0.08, elevation);
 	vec3 tint = sun_color.rgb * cloud_solar_tint(elevation);
-	return tint * sun_intensity * daylight * phase * scattering * view_transmittance
-		* mask * light_shaft_strength * distant_gate;
+	float lunar_phase = cloud_henyey_greenstein(clamp(dot(direction, normalize(moon_direction)), -1.0, 1.0), 0.65) * (4.0 * PI);
+	vec3 sources = tint * sun_intensity * daylight * phase * masks.x
+		+ moon_color.rgb * moon_intensity * lunar_phase * masks.y;
+	return sources * scattering * view_transmittance * light_shaft_strength * distant_gate;
 }

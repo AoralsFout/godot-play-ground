@@ -21,6 +21,8 @@ GUI 左上角显示 FPS 和当前相机模式。`Tab` 切换第三人称与自�
 
 相机验收：`Godot --headless --path . --script res://tests/自由相机验收.gd` 验证切换和输入阻塞；窗口模式加 `-- --render` 额外验证飞行、鼠标转向并保存 `.godot/camera-validation/free_camera.png`。
 
+选中 `世界场景/世界环境`，在检查器的「天空 · 太阳自动轮转」中开启 `Sun Auto Rotate`。`Sun Rotation Speed` 按度/秒控制速度，负值反向、0 暂停；`Sun Rotation Axis` 可选择 X 昼夜循环或 Y 水平方位轮转。默认从日光当前角度开始，以 1 度/秒推进，6 分钟一圈。`Sun Rotation Editor Preview` 控制编辑器中是否推进；运行时仍遵循主开关和游戏暂停。关闭主开关时停留在当前角度，天空、云光照及海面继续跟随日光。
+
 ## 体积云
 
 `世界场景/体积云` 接入 `E:\GodotProjects\volume-cloude` 的球壳体积云实现。支持 Perlin / Perlin-Worley 三维噪声、覆盖度与高度剖面、细节侵蚀、砧状云、风动画、Nubis 自阴影和散射、大气融合、光束，以及地形与海面的太阳云影。世界场景采用源项目当前保存的云形状参数，太阳与夜间环境补光跟随本项目的日月控制器。

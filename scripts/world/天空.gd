@@ -34,6 +34,20 @@ const CLEAR_SKY := preload("res://materials/晴空.tres")
 		night_ambient_energy = value
 		_apply_settings()
 
+@export_group("天空 · 太阳自动轮转")
+## 从日光节点当前角度开始轮转；关闭后停留在当前角度，可继续手动调节。
+@export var sun_auto_rotate := false
+## 每秒旋转的度数。负值反向，0 暂停；1 度/秒对应 6 分钟一圈。
+@export_range(-360.0, 360.0, 0.1) var sun_rotation_speed := 1.0:
+	set(value):
+		sun_rotation_speed = clampf(value, -360.0, 360.0)
+## X 改变太阳高度形成昼夜循环，Y 改变水平朝向。
+@export_enum("X（昼夜）", "Y（方位）") var sun_rotation_axis := 0:
+	set(value):
+		sun_rotation_axis = clampi(value, 0, 1)
+## 在编辑器中也推进轮转。只想在游戏里轮转时关闭此项。
+@export var sun_rotation_editor_preview := true
+
 @export_group("天空 · 独立月亮")
 ## 使用独立的方向光控制月亮。旋转月光节点，X/Y 分别改变高度和方位。
 @export_node_path("DirectionalLight3D") var moon_path := NodePath("../月光"):
@@ -94,11 +108,12 @@ func _ready() -> void:
 	_apply_settings()
 
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
 	if sky_material == null:
 		return
 	if not is_instance_valid(_sun):
 		_sun = get_node_or_null(sun_path) as DirectionalLight3D
+	_advance_sun_rotation(delta)
 	var direction := _sun.global_basis.z.normalized() if _sun != null else Vector3(0.45, 0.46, 0.77).normalized()
 	var sun_visible := _sun.is_visible_in_tree() if _sun != null else true
 	if not is_instance_valid(_moon):
@@ -110,6 +125,16 @@ func _process(_delta: float) -> void:
 		_update_atmosphere(direction, sun_visible)
 	# 主场景会替换水面材质，使用实际正在渲染的材质。
 	_sync_water()
+
+
+func _advance_sun_rotation(delta: float) -> void:
+	if not sun_auto_rotate or sun_rotation_speed == 0.0 or not is_instance_valid(_sun):
+		return
+	if Engine.is_editor_hint() and not sun_rotation_editor_preview:
+		return
+	var angles := _sun.rotation
+	angles[sun_rotation_axis] = wrapf(angles[sun_rotation_axis] + deg_to_rad(sun_rotation_speed) * delta, -PI, PI)
+	_sun.rotation = angles
 
 
 func _apply_settings() -> void:

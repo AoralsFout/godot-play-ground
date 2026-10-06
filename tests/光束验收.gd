@@ -35,6 +35,7 @@ func _run() -> void:
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	game.get_node("GUI").hide()
 	var world := game.get_node("世界场景")
+	world.get_node("世界环境").sun_auto_rotate = false
 	var clouds := world.get_node("体积云")
 	# 固定天气夹具，避免编辑器保存的昼夜/云形调参改变光束回归基准。
 	clouds.planet_radius = 6371000.0

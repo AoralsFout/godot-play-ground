@@ -33,6 +33,7 @@ func _run() -> void:
 	var session := root.get_node("Session")
 	var game := (load("res://scenes/根节点.tscn") as PackedScene).instantiate()
 	root.add_child(game)
+	game.get_node("世界场景/世界环境").sun_auto_rotate = false
 	var player: Node3D = game.avatars[session.local_id()]
 	var gui := game.get_node("GUI")
 	# 让角色先落地，测试进入自由模式后保持位置。

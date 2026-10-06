@@ -30,6 +30,7 @@ func _run() -> void:
 	var world := game.get_node("世界场景")
 	var clouds := world.get_node("体积云")
 	var sky := world.get_node("世界环境") as WorldEnvironment
+	sky.sun_auto_rotate = false
 	var water := world.get_node("水面")
 	var gui := game.get_node("GUI")
 	var camera := Camera3D.new()

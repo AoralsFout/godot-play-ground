@@ -2,6 +2,7 @@ shader_type spatial;
 // 在绘制透明水面之前复制屏幕；写入深度以正确排序重叠的波浪。
 render_mode blend_mix, depth_draw_always, cull_disabled, ambient_light_disabled;
 #include "res://shaders/water/海浪.gdshaderinc"
+#include "res://shaders/clouds/cloud_ground_shadow.gdshaderinc"
 uniform vec4 shallow_color : source_color = vec4(0.18, 0.58, 0.56, 1.0);
 uniform vec4 deep_color : source_color = vec4(0.008, 0.065, 0.10, 1.0);
 uniform vec3 absorption = vec3(0.18, 0.045, 0.022);
@@ -37,6 +38,7 @@ uniform sampler2D screen_texture : hint_screen_texture, repeat_disable, filter_l
 uniform sampler2D depth_texture : hint_depth_texture, repeat_disable, filter_nearest;
 varying vec2 water_world_xz;
 varying float surface_specular;
+varying float water_cloud_visibility;
 vec3 view_position(vec2 uv, float depth, mat4 inverse_projection) {
  vec3 ndc = vec3(uv * 2.0 - 1.0, depth);
  #if CURRENT_RENDERER == RENDERER_COMPATIBILITY
@@ -70,6 +72,7 @@ void vertex() {
  }
 }
 void fragment() {
+	water_cloud_visibility = cloud_ground_visibility((INV_VIEW_MATRIX * vec4(VERTEX, 1.0)).xyz, CAMERA_VISIBLE_LAYERS);
  float time = (use_game_time ? game_time : TIME) * wave_speed;
  float ripple_fade = 1.0 - smoothstep(30.0, 240.0, length(water_world_xz - CAMERA_POSITION_WORLD.xz));
  vec3 ripple = smooth_noise(water_world_xz * 2.6 + vec2(0.35, 0.14) * time);
@@ -169,7 +172,8 @@ void fragment() {
  ALPHA = shore;
 }
 void light() {
- DIFFUSE_LIGHT += LIGHT_COLOR * ATTENUATION * max(dot(NORMAL, LIGHT), 0.0) / PI;
+ float visibility = cloud_ground_light_visibility(LIGHT, INV_VIEW_MATRIX, LIGHT_IS_DIRECTIONAL, water_cloud_visibility);
+ DIFFUSE_LIGHT += LIGHT_COLOR * ATTENUATION * visibility * max(dot(NORMAL, LIGHT), 0.0) / PI;
  vec3 half_vector = normalize(LIGHT + VIEW);
  float ndl = max(dot(NORMAL, LIGHT), 0.0);
  float ndv = max(dot(NORMAL, VIEW), 0.001);
@@ -182,5 +186,5 @@ void light() {
  float k = (ROUGHNESS + 1.0) * (ROUGHNESS + 1.0) / 8.0;
  float geometry = ndv / (ndv * (1.0 - k) + k) * ndl / (ndl * (1.0 - k) + k);
  float fresnel = 0.0204 + 0.9796 * pow(1.0 - vdh, 5.0);
- SPECULAR_LIGHT += LIGHT_COLOR * ATTENUATION * distribution * geometry * fresnel / max(4.0 * ndv, 0.001) * SPECULAR_AMOUNT * surface_specular;
+ SPECULAR_LIGHT += LIGHT_COLOR * ATTENUATION * visibility * distribution * geometry * fresnel / max(4.0 * ndv, 0.001) * SPECULAR_AMOUNT * surface_specular;
 }

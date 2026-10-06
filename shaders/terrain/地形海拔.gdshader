@@ -1,4 +1,5 @@
 shader_type spatial;
+#include "res://shaders/clouds/cloud_ground_shadow.gdshaderinc"
 render_mode diffuse_burley, specular_schlick_ggx;
 
 group_uniforms Coast;
@@ -34,6 +35,8 @@ group_uniforms;
 
 varying vec3 terrain_world_position;
 varying vec3 terrain_world_normal;
+varying float terrain_cloud_visibility;
+varying float terrain_surface_specular;
 
 float hash_position(vec3 cell) {
 	vec3 p = fract(cell * 0.1031);
@@ -63,6 +66,7 @@ void fragment() {
 	if ((CAMERA_VISIBLE_LAYERS & 786432u) == 262144u && terrain_world_position.y < sea_level + 0.02) {
 		discard;
 	}
+	terrain_cloud_visibility = cloud_ground_visibility(terrain_world_position, CAMERA_VISIBLE_LAYERS);
 	float height = terrain_world_position.y - sea_level;
 	float macro = terrain_noise(terrain_world_position * macro_scale);
 	float detail = terrain_noise(terrain_world_position * detail_scale);
@@ -90,6 +94,7 @@ void fragment() {
 	ALBEDO = surface_color * (1.0 + variation) * (1.0 - wetness * 0.22);
 	ROUGHNESS = mix(mix(0.96, 0.87, rock_weight), 0.62, wetness);
 	SPECULAR = mix(0.20, 0.32, wetness);
+	terrain_surface_specular = SPECULAR;
 	// 导数扰动细微凹凸，不依赖导入网格的切线或法线贴图。
 	vec3 dpdx = dFdx(VERTEX);
 	vec3 dpdy = dFdy(VERTEX);
@@ -100,4 +105,28 @@ void fragment() {
 	float relief = detail * bump_strength * grain_visibility;
 	vec3 gradient = sign(determinant) * (dFdx(relief) * tangent_x + dFdy(relief) * tangent_y);
 	NORMAL = normalize(n - gradient / max(abs(determinant), 0.00001));
+}
+
+void light() {
+	float visibility = cloud_ground_light_visibility(LIGHT, INV_VIEW_MATRIX, LIGHT_IS_DIRECTIONAL, terrain_cloud_visibility);
+	float ndl = max(dot(NORMAL, LIGHT), 0.0);
+	float ndv = max(dot(NORMAL, VIEW), 0.001);
+	vec3 half_vector = normalize(LIGHT + VIEW);
+	float ndh = max(dot(NORMAL, half_vector), 0.0);
+	float vdh = max(dot(VIEW, half_vector), 0.0);
+	// Burley 漫反射保留粗糙地表的掠射角响应，云影只乘直射光。
+	float fd90 = 0.5 + 2.0 * ROUGHNESS * vdh * vdh;
+	float diffuse = (1.0 + (fd90 - 1.0) * pow(1.0 - ndl, 5.0))
+		* (1.0 + (fd90 - 1.0) * pow(1.0 - ndv, 5.0));
+	DIFFUSE_LIGHT += LIGHT_COLOR * ATTENUATION * visibility * ndl * diffuse / PI;
+	float a = max(ROUGHNESS * ROUGHNESS, 0.003);
+	float a2 = a * a;
+	float denominator = ndh * ndh * (a2 - 1.0) + 1.0;
+	float distribution = a2 / (PI * denominator * denominator);
+	float k = (ROUGHNESS + 1.0) * (ROUGHNESS + 1.0) / 8.0;
+	float geometry = ndv / (ndv * (1.0 - k) + k) * ndl / (ndl * (1.0 - k) + k);
+	float f0 = 0.16 * terrain_surface_specular * terrain_surface_specular;
+	float fresnel = f0 + (1.0 - f0) * pow(1.0 - vdh, 5.0);
+	SPECULAR_LIGHT += LIGHT_COLOR * ATTENUATION * visibility * distribution * geometry * fresnel
+		/ max(4.0 * ndv, 0.001) * SPECULAR_AMOUNT;
 }

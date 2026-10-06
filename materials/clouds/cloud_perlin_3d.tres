@@ -1,0 +1,15 @@
+[gd_resource type="NoiseTexture3D" format=3 uid="uid://btyf41uhjau7p"]
+
+[sub_resource type="FastNoiseLite" id="Noise_perlin"]
+noise_type = 3
+seed = 42
+frequency = 0.03125
+fractal_type = 0
+
+[resource]
+width = 128
+height = 128
+depth = 128
+noise = SubResource("Noise_perlin")
+seamless = true
+normalize = false

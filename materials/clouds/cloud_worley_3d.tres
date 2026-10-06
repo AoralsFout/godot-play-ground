@@ -1,0 +1,15 @@
+[gd_resource type="NoiseTexture3D" format=3 uid="uid://cdkcsty88nnvk"]
+
+[sub_resource type="FastNoiseLite" id="Noise_worley"]
+noise_type = 2
+seed = 42
+frequency = 0.03125
+fractal_type = 0
+
+[resource]
+width = 128
+height = 128
+depth = 128
+noise = SubResource("Noise_worley")
+seamless = true
+normalize = false

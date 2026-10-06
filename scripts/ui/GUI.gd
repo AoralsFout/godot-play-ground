@@ -20,6 +20,8 @@ var game_menu: Control
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	map_texture.texture = map_viewport.get_texture()
+	# 空合成器覆盖世界的体积云后处理，俯视地图只显示地形与标记。
+	map_camera.compositor = Compositor.new()
 	chat = CHAT_SCRIPT.new()
 	chat.name = "聊天框"
 	add_child(chat)

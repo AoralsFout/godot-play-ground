@@ -20,6 +20,7 @@ func _ready() -> void:
 		Session.players[1] = {"nickname": "玩家", "ping": 0}
 	Session.players_changed.connect(_sync_players)
 	Session.player_state_received.connect(_receive_state)
+	gui.free_camera_toggle_requested.connect(_toggle_free_camera)
 	_sync_players()
 
 
@@ -48,9 +49,16 @@ func _sync_players() -> void:
 		player_container.add_child(avatar)
 		avatars[id] = avatar
 		if avatar.is_local:
+			avatar.free_camera_changed.connect(gui.set_free_camera_enabled)
 			gui.target_camera_path = gui.get_path_to(avatar.get_node("顶视图摄像机枢轴/顶视图摄像机"))
 		elif Session.player_states.has(id):
 			avatar.apply_network_state(Session.player_states[id])
+
+
+func _toggle_free_camera() -> void:
+	var avatar: Node3D = avatars.get(Session.local_id())
+	if is_instance_valid(avatar):
+		avatar.toggle_free_camera()
 
 
 func _receive_state(id: int, state: Dictionary) -> void:

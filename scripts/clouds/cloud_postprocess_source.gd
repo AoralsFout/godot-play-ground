@@ -14,7 +14,7 @@ const SOURCES := {
 	"res://shaders/clouds/cloud_math.gdshaderinc": preload("res://shaders/clouds/cloud_math.gdshaderinc"),
 }
 
-const PASS_BINDINGS := [[1, 2, 3, 4, 5, 6, 7], [1, 2, 7, 8], [7, 9, 10], [0, 1, 2, 3, 7, 11]]
+const PASS_BINDINGS := [[1, 2, 3, 4, 5, 6, 7], [1, 2, 7, 8], [7, 9, 10], [0, 1, 2, 3, 7, 9, 11]]
 
 const HEADER := """#version 450
 layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
@@ -86,14 +86,16 @@ void main() {
 	if (light_shafts_enabled && light_shaft_strength > 0.0 && screen_fade > 0.0) {
 		vec2 uv = (vec2(pixel) + 0.5) / vec2(size);
 		// 输出向外偏移的高光：反向查找略靠近太阳的输入位置。
-		vec2 input_uv = sun_uv + (uv - sun_uv) / 1.04;
+		vec2 input_uv = sun_uv + (uv - sun_uv) / (1.0 + light_shaft_offset);
 		if (post_inside(input_uv) && textureLod(scene_depth, input_uv, 0.0).r <= 0.0) {
 			ivec2 cloud_size = imageSize(cloud_buffer);
 			ivec2 cloud_pixel = clamp(ivec2(input_uv * vec2(cloud_size)), ivec2(0), cloud_size - 1);
 			float opacity = imageLoad(cloud_buffer, cloud_pixel).a;
 			float alignment = max(dot(post_view_ray(input_uv), normalize(sun_direction)), 0.0);
 			float visible = cloud_sun_visible(CAMERA_POSITION_WORLD, normalize(sun_direction)) ? 1.0 : 0.0;
-			highlight = pow(alignment, 256.0) * (1.0 - opacity) * visible * screen_fade;
+			float exponent = log(0.5) / log(cos(light_shaft_spread * PI / 180.0));
+			// 加强厚云与云隙对比，半透明云边仍连续透光。
+			highlight = pow(alignment, exponent) * pow(max(1.0 - opacity, 0.0), 1.5) * visible * screen_fade;
 		}
 	}
 	imageStore(shaft_seed, pixel, vec4(highlight, 0.0, 0.0, 1.0));
@@ -113,8 +115,8 @@ void main() {
 		for (int index = 0; index < 64; index++) {
 			if (index >= light_shaft_samples) { break; }
 			float t = float(index) / max(float(light_shaft_samples - 1), 1.0);
-			vec2 sample_uv = mix(uv, sun_uv, t * 0.85);
-			float weight = exp(-t * 2.0);
+			vec2 sample_uv = mix(uv, sun_uv, t * light_shaft_length);
+			float weight = exp(-t * 1.2);
 			if (post_inside(sample_uv)) {
 				intensity += textureLod(shaft_seed_texture, sample_uv, 0.0).r * weight;
 			}
@@ -139,15 +141,22 @@ void main() {
 	vec4 scene = imageLoad(scene_color, pixel);
 	vec3 result = mix(scene.rgb, mix(radiance, sky, cloud.g), cloud.a);
 	float mask = textureLod(shaft_blur_texture, uv, 0.0).r;
-	// 终点取几何/云的较近深度，Mie 在远距离才启用，云的不透明度也遮挡光束。
+	// 终点取几何/云的较近深度，Mie 在远距离才启用。
+	// 云前空气已经按深度截断，不能再乘云透射率，否则厚云前的光束会被抹掉。
 	float distance_limit = post_scene_distance(uv);
-	if (cloud.a > 0.00001) { distance_limit = min(distance_limit, representative_distance); }
-	result += cloud_mie_shafts(mask, distance_limit, CAMERA_POSITION_WORLD, direction) * (1.0 - cloud.a);
+	// 半透明云连续缩短有效空气段；微量云不能突然截断整条光束。
+	if (cloud.a > 0.00001) {
+		distance_limit = mix(distance_limit, min(distance_limit, representative_distance), cloud.a);
+	}
+	vec3 shafts = cloud_mie_shafts(mask, distance_limit, CAMERA_POSITION_WORLD, direction);
+	result += shafts;
 	if (post_debug_view == 1) { result = vec3(cloud.r / (1.0 + cloud.r)); }
 	if (post_debug_view == 2) { result = vec3(cloud.g); }
 	if (post_debug_view == 3) { result = vec3(cloud.b / (1.0 + cloud.b)); }
 	if (post_debug_view == 4) { result = vec3(cloud.a); }
 	if (post_debug_view == 5) { result = vec3(mask); }
+	if (post_debug_view == 6) { result = vec3(textureLod(shaft_seed_texture, uv, 0.0).r); }
+	if (post_debug_view == 7) { result = shafts / (vec3(1.0) + shafts); }
 	imageStore(scene_color, pixel, vec4(result, scene.a));
 }
 """

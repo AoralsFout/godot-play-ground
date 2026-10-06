@@ -5,6 +5,7 @@ signal active_changed(active: bool)
 
 const MESSAGE_LIFETIME := 8.0
 const MAX_RECENT := 5
+const IDLE_HINT := "T 聊天  ·  Esc 菜单  ·  Tab 自由相机"
 var is_open := false
 var recent: VBoxContainer
 var history_panel: PanelContainer
@@ -48,7 +49,7 @@ func _ready() -> void:
 	input.custom_minimum_size.y = 42
 	input.text_submitted.connect(_send)
 	compose_panel.add_child(input)
-	hint = UIStyle.label("T 聊天  ·  Esc 菜单", 14, UIStyle.MUTED)
+	hint = UIStyle.label(IDLE_HINT, 14, UIStyle.MUTED)
 	hint.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	hint.add_theme_color_override("font_outline_color", UIStyle.INK)
 	hint.add_theme_constant_override("outline_size", 4)
@@ -101,7 +102,7 @@ func close_chat() -> void:
 	history_panel.hide()
 	compose_panel.hide()
 	recent.show()
-	hint.text = "T 聊天  ·  Esc 菜单"
+	hint.text = IDLE_HINT
 	Session.input_blocked = false
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	active_changed.emit(false)

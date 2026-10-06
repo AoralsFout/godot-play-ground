@@ -91,21 +91,38 @@ const CLOUD_SHADER = preload("res://shaders/clouds/minimal_volume_cloud.gdshader
 	set(value):
 		light_shafts_enabled = value
 		_refresh_cloud()
-@export_range(0.0, 3.0, 0.01) var light_shaft_strength: float = 0.8:
+@export_range(0.0, 3.0, 0.01) var light_shaft_strength: float = 1.0:
 	set(value):
 		light_shaft_strength = clampf(value, 0.0, 3.0)
 		_refresh_cloud()
-@export_range(500.0, 10000.0, 100.0) var light_shaft_start: float = 2000.0:
+@export_range(500.0, 10000.0, 100.0) var light_shaft_start: float = 500.0:
 	set(value):
 		light_shaft_start = clampf(value, 500.0, 10000.0)
 		_refresh_cloud()
-@export_range(16, 64, 1) var light_shaft_samples: int = 32:
+@export_range(16, 64, 1) var light_shaft_samples: int = 64:
 	set(value):
 		light_shaft_samples = clampi(value, 16, 64)
 		_refresh_cloud()
-@export_enum("Final", "Direct light", "Atmosphere blend", "Ambient light", "Opacity", "Light shafts") var post_debug_view: int = 0:
+## 太阳周围高光的半强度角。扩大这个角度可让远离圆盘的云隙参与光束。
+@export_range(5.0, 60.0, 1.0) var light_shaft_spread: float = 35.0:
 	set(value):
-		post_debug_view = clampi(value, 0, 5)
+		light_shaft_spread = clampf(value, 5.0, 60.0)
+		_refresh_cloud()
+@export_range(0.1, 0.98, 0.01) var light_shaft_length: float = 0.94:
+	set(value):
+		light_shaft_length = clampf(value, 0.1, 0.98)
+		_refresh_cloud()
+@export_range(0.0, 0.3, 0.01) var light_shaft_offset: float = 0.12:
+	set(value):
+		light_shaft_offset = clampf(value, 0.0, 0.3)
+		_refresh_cloud()
+@export_range(0.0, 3.0, 0.01) var atmosphere_mie_density: float = 1.0:
+	set(value):
+		atmosphere_mie_density = clampf(value, 0.0, 3.0)
+		_refresh_cloud()
+@export_enum("Final", "Direct light", "Atmosphere blend", "Ambient light", "Opacity", "Light shafts", "Shaft highlight", "Mie contribution") var post_debug_view: int = 0:
+	set(value):
+		post_debug_view = clampi(value, 0, 7)
 		_refresh_cloud()
 
 @export_group("3D noise")
@@ -270,7 +287,8 @@ const MATERIAL_PARAMETERS := [
 	"planet_surface_origin", "planet_radius", "cloud_bottom", "cloud_top", "cloud_map_center", "cloud_map_extent",
 	"cloud_map", "coverage_blend", "coverage_amount", "cloud_type_bias", "density_multiplier", "extinction",
 	"march_steps", "max_distance", "detail_distance", "haze_strength", "atmosphere_density", "light_shafts_enabled",
-	"light_shaft_strength", "light_shaft_start", "light_shaft_samples", "post_debug_view", "density_mode",
+	"light_shaft_strength", "light_shaft_start", "light_shaft_samples", "light_shaft_spread", "light_shaft_length",
+	"light_shaft_offset", "atmosphere_mie_density", "post_debug_view", "density_mode",
 	"noise_repeat_distance", "noise_octaves", "noise_gain", "noise_lacunarity", "erosion_strength", "erosion_frequency",
 	"wind_height_skew", "anvil_bias", "anvil_skew_distance", "self_shadow", "light_steps", "nubis_lighting",
 	"phase_eccentricity", "silver_intensity", "silver_spread", "multi_scatter_strength", "in_scatter_strength",

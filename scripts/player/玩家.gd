@@ -1,9 +1,16 @@
 extends CharacterBody3D
 
+signal free_camera_changed(enabled: bool)
+
 @export var move_speed: float = 6.0
 @export var acceleration: float = 24.0
 @export var jump_speed: float = 5.0
 @export var mouse_sensitivity: float = 0.0025
+@export var free_camera_speed: float = 100.0
+@export var free_camera_boost: float = 4.0
+
+var free_camera_enabled := false
+var free_camera: Camera3D
 
 var peer_id := 1
 var is_local := true
@@ -29,6 +36,14 @@ func _ready() -> void:
 	camera.current = is_local
 	_update_map_heading()
 	if is_local:
+		free_camera = Camera3D.new()
+		free_camera.name = "自由摄像机"
+		add_child(free_camera)
+		free_camera.top_level = true
+		free_camera.cull_mask = camera.cull_mask
+		free_camera.near = camera.near
+		free_camera.far = camera.far
+		free_camera.fov = camera.fov
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	else:
 		collision_layer = 0
@@ -47,6 +62,11 @@ func _unhandled_input(event: InputEvent) -> void:
 	if not is_local or Session.input_blocked:
 		return
 	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
+		if free_camera_enabled:
+			free_camera.rotation.y -= event.relative.x * mouse_sensitivity
+			free_camera.rotation.x = clampf(free_camera.rotation.x - event.relative.y * mouse_sensitivity,
+				deg_to_rad(-89.0), deg_to_rad(89.0))
+			return
 		camera_yaw.rotate_y(-event.relative.x * mouse_sensitivity)
 		camera_pitch.rotation.x = clampf(
 			camera_pitch.rotation.x - event.relative.y * mouse_sensitivity,
@@ -54,6 +74,30 @@ func _unhandled_input(event: InputEvent) -> void:
 			deg_to_rad(45.0)
 		)
 		_update_map_heading()
+
+
+func toggle_free_camera() -> void:
+	if not is_local or Session.input_blocked or get_tree().paused:
+		return
+	free_camera_enabled = not free_camera_enabled
+	if free_camera_enabled:
+		# 每次进入从当前第三人称视角出发，角色与原摄像机朝向保留。
+		free_camera.global_transform = camera.global_transform
+		free_camera.make_current()
+		velocity = Vector3.ZERO
+	else:
+		camera.make_current()
+	free_camera_changed.emit(free_camera_enabled)
+
+
+func _process(delta: float) -> void:
+	if not free_camera_enabled or Session.input_blocked or Input.mouse_mode != Input.MOUSE_MODE_CAPTURED:
+		return
+	var input_direction := Input.get_vector("玩家左移", "玩家右移", "玩家前移", "玩家后移")
+	var direction := free_camera.global_basis * Vector3(input_direction.x, 0.0, input_direction.y)
+	direction.y += float(Input.is_action_pressed("玩家跳跃")) - float(Input.is_physical_key_pressed(KEY_CTRL))
+	var speed := free_camera_speed * (free_camera_boost if Input.is_physical_key_pressed(KEY_SHIFT) else 1.0)
+	free_camera.global_position += direction.limit_length() * speed * delta
 
 
 func _update_map_heading() -> void:
@@ -68,6 +112,8 @@ func _physics_process(delta: float) -> void:
 			global_position = global_position.lerp(_remote_position, minf(delta * 16.0, 1.0))
 			camera_yaw.rotation.y = lerp_angle(camera_yaw.rotation.y, _remote_yaw, minf(delta * 16.0, 1.0))
 			_update_map_heading()
+		return
+	if free_camera_enabled:
 		return
 	if is_on_floor():
 		if not Session.input_blocked and Input.is_action_just_pressed("玩家跳跃"):

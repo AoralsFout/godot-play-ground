@@ -17,6 +17,10 @@ Godot 4.7 项目。运行入口为 `scenes/主菜单.tscn`；游戏场景为 `sc
 
 场景关系：`根节点 → 世界场景 → 地图 → 超大地形`。地图直接承载 GLB，统一绑定地形材质。当前场景没有树林、草地或旧 VoxelGI 烘焙节点；天空、日月光照和海面效果仍由环境脚本管理。
 
+GUI 左上角显示 FPS 和当前相机模式。`Tab` 切换第三人称与自由相机；自由相机使用鼠标转向、`WASD` 飞行、`Space` 上升、`Ctrl` 下降、`Shift` 加速，可穿过场景观察云和地形。进入时复制当前视角，角色留在原位，退出后恢复第三人称。聊天或菜单打开时不切换相机、不移动视角，小地图继续追踪角色。
+
+相机验收：`Godot --headless --path . --script res://tests/自由相机验收.gd` 验证切换和输入阻塞；窗口模式加 `-- --render` 额外验证飞行、鼠标转向并保存 `.godot/camera-validation/free_camera.png`。
+
 ## 体积云
 
 `世界场景/体积云` 接入 `E:\GodotProjects\volume-cloude` 的球壳体积云实现。支持 Perlin / Perlin-Worley 三维噪声、覆盖度与高度剖面、细节侵蚀、砧状云、风动画、Nubis 自阴影和散射、大气融合、光束，以及地形与海面的太阳云影。世界场景采用源项目当前保存的云形状参数，太阳与夜间环境补光跟随本项目的日月控制器。
@@ -33,6 +37,16 @@ Godot --path . --script res://tests/体积云验收.gd -- --render
 ```
 
 截图输出到 `.godot/cloud-validation/`。GPU 验收须使用窗口模式和 Forward+。云质量预算可通过 `march_steps`、`light_steps` 和 `ground_shadow_steps` 调节；当前预设沿用源项目的 96 次视线、16 次自阴影、12 次地面云影预算。
+
+光束按 Nubis 的流程生成：太阳周围的宽高光乘云透射率，径向向外偏移后在四分之一分辨率模糊，最终作为远距离 Mie 入散射的遮罩。默认 `light_shaft_spread = 35` 度、`light_shaft_length = 0.94`、`light_shaft_offset = 0.12`、`light_shaft_samples = 64`；`light_shaft_strength` 控制合成强度，`atmosphere_mie_density` 控制气溶胶浓度。散射从 500 米后平滑启用，几何深度截断近景，云不透明度连续缩短空气段。云前的空气不再重复乘云透射率。
+
+`post_debug_view` 的 `Light shafts` 显示径向模糊遮罩，`Shaft highlight` 显示偏移后的高光源，`Mie contribution` 显示实际散射贡献。固定视角验收会检查可见光束、80 米不透明物体的遮挡、背向太阳和夜间关闭，并输出白天及低太阳角度截图到 `.godot/shaft-validation/`：
+
+```powershell
+Godot --path . --script res://tests/光束验收.gd
+```
+
+低太阳角度、太阳周围有多处云隙时，长光束最明显。此效果仍使用屏幕空间遮罩，画面外的云遮挡无法重建；参考图的云形状、时间和色彩也会影响最终观感。
 
 ## 地形与美术源文件
 

@@ -2,9 +2,15 @@
 // 原文没有给出 Decima 的大气查找表/系数，这些系数是本项目的实现选择。
 uniform float atmosphere_density : hint_range(0.0, 3.0) = 1.0;
 uniform bool light_shafts_enabled = true;
-uniform float light_shaft_strength : hint_range(0.0, 3.0) = 0.8;
-uniform float light_shaft_start : hint_range(500.0, 10000.0) = 2000.0;
-uniform int light_shaft_samples : hint_range(16, 64) = 32;
+uniform float light_shaft_strength : hint_range(0.0, 3.0) = 1.0;
+uniform float light_shaft_start : hint_range(500.0, 10000.0) = 500.0;
+uniform int light_shaft_samples : hint_range(16, 64) = 64;
+// 高光半强度角（度），不是太阳圆盘大小。宽高光才能让多个云隙形成光束。
+uniform float light_shaft_spread : hint_range(5.0, 60.0) = 35.0;
+uniform float light_shaft_length : hint_range(0.1, 0.98) = 0.94;
+uniform float light_shaft_offset : hint_range(0.0, 0.3) = 0.12;
+// 气溶胶影响大气融合和光束，保留同一介质的颜色/消光关系。
+uniform float atmosphere_mie_density : hint_range(0.0, 3.0) = 1.0;
 uniform int post_debug_view = 0;
 // 镜像摄像机位于海平面下；云使用镜像回海面上的观察位置，避免被星球裁掉。
 uniform bool cloud_reflection_view = false;
@@ -25,7 +31,7 @@ vec2 cloud_atmosphere_segment(float start_distance, float end_distance, vec3 ori
 		vec3 position = origin + direction * mix(entry, exit_distance, (t0 + t1) * 0.5);
 		float altitude = max(cloud_altitude(position), 0.0);
 		optical_depth += vec2(exp(-altitude / 8000.0) * 0.000017,
-			exp(-altitude / 1200.0) * 0.000008) * segment;
+			exp(-altitude / 2000.0) * 0.00002 * atmosphere_mie_density) * segment;
 	}
 	return optical_depth * atmosphere_density;
 }
@@ -61,12 +67,17 @@ vec3 cloud_mie_shafts(float mask, float distance_to_point, vec3 origin, vec3 dir
 	if (distant_gate <= 0.0 || atmosphere_density <= 0.0) {
 		return vec3(0.0);
 	}
-	float mie_depth = cloud_atmosphere_segment(light_shaft_start, distance_to_point, origin, direction).y;
+	vec2 foreground_depth = cloud_atmosphere_depth(light_shaft_start, origin, direction);
+	vec2 distant_depth = cloud_atmosphere_segment(light_shaft_start, distance_to_point, origin, direction);
+	float view_transmittance = exp(-foreground_depth.x - foreground_depth.y);
+	float total_depth = distant_depth.x + distant_depth.y;
+	// Mie 入散射乘完整介质消光，避免长视线累积成不受衰减的白色覆盖。
+	float scattering = distant_depth.y / max(total_depth, 0.000001) * (1.0 - exp(-total_depth));
 	float alignment = clamp(dot(direction, normalize(sun_direction)), -1.0, 1.0);
-	float phase = cloud_henyey_greenstein(alignment, 0.8) * (4.0 * PI);
+	float phase = cloud_henyey_greenstein(alignment, 0.65) * (4.0 * PI);
 	float elevation = cloud_solar_elevation(origin, normalize(sun_direction));
 	float daylight = smoothstep(-0.04, 0.08, elevation);
 	vec3 tint = sun_color.rgb * cloud_solar_tint(elevation);
-	return tint * sun_intensity * daylight * phase * (1.0 - exp(-mie_depth))
+	return tint * sun_intensity * daylight * phase * scattering * view_transmittance
 		* mask * light_shaft_strength * distant_gate;
 }

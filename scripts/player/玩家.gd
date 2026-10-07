@@ -26,6 +26,7 @@ var _has_remote_state := false
 @onready var camera: Camera3D = $"第三人称摄像机枢轴/摄像机俯仰/摄像机伸缩臂/第三人称摄像机"
 @onready var map_camera_pivot: Marker3D = $"顶视图摄像机枢轴"
 @onready var map_indicator: Node3D = $"地图指示器"
+@onready var player_model: PlayerAnimationStateMachine = $model
 
 var gravity: float = float(ProjectSettings.get_setting("physics/3d/default_gravity"))
 
@@ -85,6 +86,7 @@ func toggle_free_camera() -> void:
 		free_camera.global_transform = camera.global_transform
 		free_camera.make_current()
 		velocity = Vector3.ZERO
+		player_model.update_motion(Vector3.ZERO)
 	else:
 		camera.make_current()
 	free_camera_changed.emit(free_camera_enabled)
@@ -99,7 +101,6 @@ func _process(delta: float) -> void:
 	var speed := free_camera_speed * (free_camera_boost if Input.is_physical_key_pressed(KEY_SHIFT) else 1.0)
 	free_camera.global_position += direction.limit_length() * speed * delta
 
-
 func _update_map_heading() -> void:
 	var heading := camera_yaw.global_rotation.y
 	map_camera_pivot.global_rotation = Vector3(-PI / 2.0, heading, 0.0)
@@ -108,12 +109,15 @@ func _update_map_heading() -> void:
 
 func _physics_process(delta: float) -> void:
 	if not is_local:
+		var previous_position := global_position
 		if _has_remote_state:
 			global_position = global_position.lerp(_remote_position, minf(delta * 16.0, 1.0))
 			camera_yaw.rotation.y = lerp_angle(camera_yaw.rotation.y, _remote_yaw, minf(delta * 16.0, 1.0))
 			_update_map_heading()
+		player_model.update_motion((global_position - previous_position) / maxf(delta, 0.000001), delta)
 		return
 	if free_camera_enabled:
+		player_model.update_motion(Vector3.ZERO)
 		return
 	if is_on_floor():
 		if not Session.input_blocked and Input.is_action_just_pressed("玩家跳跃"):
@@ -131,6 +135,7 @@ func _physics_process(delta: float) -> void:
 	velocity.x = move_toward(velocity.x, move_direction.x * move_speed, acceleration * delta)
 	velocity.z = move_toward(velocity.z, move_direction.z * move_speed, acceleration * delta)
 	move_and_slide()
+	player_model.update_motion(get_real_velocity(), delta)
 	_sync_elapsed += delta
 	if _sync_elapsed >= 0.05:
 		_sync_elapsed = 0.0

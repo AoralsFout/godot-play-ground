@@ -2,9 +2,11 @@
 
 [ext_resource type="Script" uid="uid://cnmvxws567hts" path="res://scripts/player/玩家.gd" id="1_iy2xn"]
 [ext_resource type="Texture2D" uid="uid://br6jc52hcb7sc" path="res://assets/ui/玩家箭头.svg" id="2_arrow"]
+[ext_resource type="PackedScene" uid="uid://2mco7em7kna4" path="res://assets/models/model.glb" id="3_5fc0o"]
+[ext_resource type="Script" uid="uid://bh6pgd2ad8g6y" path="res://scripts/player/玩家动画状态机.gd" id="4_7tyt6"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_76r4o"]
-height = 1.7431641
+height = 2.2154846
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_jyyn8"]
 
@@ -27,8 +29,7 @@ adjustment_enabled = true
 
 [node name="玩家" type="CharacterBody3D" unique_id=24142093]
 script = ExtResource("1_iy2xn")
-move_speed = 100.0
-acceleration = 100.0
+move_speed = 120.0
 
 [node name="第三人称摄像机枢轴" type="Marker3D" parent="." unique_id=546699243]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, 0)
@@ -46,10 +47,11 @@ cull_mask = 1048573
 far = 16000.0
 
 [node name="碰撞" type="CollisionShape3D" parent="." unique_id=1390695550]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.1350708, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.03642273, 0)
 shape = SubResource("CapsuleShape3D_76r4o")
 
 [node name="模型" type="MeshInstance3D" parent="." unique_id=2112193050]
+visible = false
 layers = 3
 mesh = SubResource("CapsuleMesh_kd3ba")
 
@@ -72,3 +74,7 @@ environment = SubResource("Environment_iy2xn")
 projection = 1
 size = 40.0
 far = 16000.0
+
+[node name="model" parent="." unique_id=1947823436 instance=ExtResource("3_5fc0o")]
+transform = Transform3D(0.495, 0, 0, 0, 0.495, 0, 0, 0, 0.495, 0, 0, 0)
+script = ExtResource("4_7tyt6")

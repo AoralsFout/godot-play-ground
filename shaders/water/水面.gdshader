@@ -30,6 +30,7 @@ uniform vec4 sky_horizon : source_color = vec4(0.68, 0.82, 0.94, 1.0);
 // 仅给水体散射补光；折射和倒影已经包含场景光照，不再重复照明。
 uniform vec3 water_ambient_light = vec3(0.12, 0.15, 0.18);
 uniform bool use_distance_lod = false;
+uniform bool infinite_ocean = false;
 uniform vec2 lod_center = vec2(0.0);
 uniform vec2 water_half_size = vec2(2000.0, 1500.0);
 uniform float wave_full_distance = 64.0;
@@ -49,8 +50,12 @@ vec3 view_position(vec2 uv, float depth, mat4 inverse_projection) {
 }
 void vertex() {
  if (use_distance_lod) {
-  VERTEX.xz = UV2.x > 0.5 ? (UV * 2.0 - 1.0) * water_half_size
-   : clamp(VERTEX.xz + lod_center, -water_half_size, water_half_size);
+  if (infinite_ocean) {
+   VERTEX.xz = lod_center + (UV2.x > 0.5 ? (UV * 2.0 - 1.0) * water_half_size : VERTEX.xz);
+  } else {
+   VERTEX.xz = UV2.x > 0.5 ? (UV * 2.0 - 1.0) * water_half_size
+    : clamp(VERTEX.xz + lod_center, -water_half_size, water_half_size);
+  }
  }
  water_world_xz = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xz;
  vec2 offset = water_world_xz - CAMERA_POSITION_WORLD.xz;
@@ -86,7 +91,7 @@ void fragment() {
  float shore = smoothstep(0.0, shore_fade_distance, depth);
  float visibility = clamp(2.0 - transparency * 2.0, 0.0, 1.0);
  shore *= visibility;
- float path_length = min(length(scene_position - VERTEX), 80.0);
+ float path_length = min(length(scene_position - VERTEX), 512.0);
  vec3 flat_normal = mat3(VIEW_MATRIX) * vec3(0.0, FRONT_FACING ? 1.0 : -1.0, 0.0);
  vec2 offset = (NORMAL - flat_normal).xy * refraction_strength * shore * min(path_length * 0.25, 1.0);
  vec2 refracted_uv = clamp(SCREEN_UV + offset, vec2(0.002), vec2(0.998));
@@ -97,7 +102,9 @@ void fragment() {
   refracted_uv = SCREEN_UV;
   refracted_position = scene_position;
  }
- path_length = min(length(refracted_position - VERTEX), 80.0);
+ // 深水路径必须足够长，使海床末端和无海床区域都趋于完全吸收。
+ // 80 米的上限仍透出约 17% 蓝色背景，从高空会显出地形矩形边界。
+ path_length = min(length(refracted_position - VERTEX), 512.0);
  // 从水下观察时，折射场景位于空气中；摄像机浸水效果负责处理水中路径。
  // 若对空气中的路径应用吸收，会错误地使天空变黑。
  float density = mix(shallow_absorption, 1.0, smoothstep(0.0, depth_fade_distance, depth));

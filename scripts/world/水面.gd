@@ -1,6 +1,6 @@
 @tool
 extends MeshInstance3D
-## 以摄像机为中心的环形水面。几何体只构建一次，之后仅移动中心位置。
+## 以摄像机为中心的环形水面。几何体只构建一次，外圈可随相机延伸至视距之外。
 
 const WATER_SIZE := Vector2(4000.0, 3000.0)
 const NEAR_STEP := 0.5
@@ -14,6 +14,13 @@ const RINGS := [
 ]
 
 @export var water_material: ShaderMaterial
+@export var infinite_ocean := true:
+	set(value):
+		infinite_ocean = value
+		if is_node_ready():
+			_last_center = Vector2(INF, INF)
+			_update_center()
+# 无限模式下是最小覆盖尺寸；实际范围同时覆盖相机视锥。
 @export var water_size := WATER_SIZE:
 	set(value):
 		water_size = value.max(Vector2(512.0, 512.0))
@@ -59,6 +66,7 @@ var _uvs := PackedVector2Array()
 var _outer_flags := PackedVector2Array()
 var _vertex_ids: Dictionary[Vector2, int] = {}
 var _last_center := Vector2(INF, INF)
+var _last_half_size := Vector2.ZERO
 var _last_material: ShaderMaterial
 
 
@@ -83,13 +91,14 @@ func _ready() -> void:
 		_create_reflection()
 
 
-func _update_bounds() -> void:
-	custom_aabb = AABB(Vector3(-water_size.x * 0.5, -3.0, -water_size.y * 0.5), Vector3(water_size.x, 6.0, water_size.y))
+func _update_bounds(center := Vector2.ZERO, half_size := Vector2.ZERO) -> void:
+	var extent := half_size if half_size != Vector2.ZERO else water_size * 0.5
+	custom_aabb = AABB(Vector3(center.x - extent.x, -3.0, center.y - extent.y), Vector3(extent.x * 2.0, 6.0, extent.y * 2.0))
 
 
 func _validate_property(property: Dictionary) -> void:
-	# 保存场景时不包含生成的网格，从编辑器保存时也一样。
-	if property["name"] == "mesh":
+	# 生成的网格和跟随相机的剔除范围均不写入场景。
+	if property["name"] in ["mesh", "custom_aabb"]:
 		property["usage"] = int(property["usage"]) & ~PROPERTY_USAGE_STORAGE
 
 
@@ -235,7 +244,7 @@ func _update_underwater() -> void:
 	var depth := 0.0
 	if underwater_enabled and camera != null and material != null and (camera.cull_mask & layers) != 0:
 		var local_camera := to_local(camera.global_position)
-		if absf(local_camera.x) < water_size.x * 0.5 and absf(local_camera.z) < water_size.y * 0.5:
+		if infinite_ocean or (absf(local_camera.x) < water_size.x * 0.5 and absf(local_camera.z) < water_size.y * 0.5):
 			depth = surface_height_at(camera.global_position) - camera.global_position.y
 			immersion = smoothstep(-0.08, 0.18, depth)
 	_underwater_layer.visible = immersion > 0.001
@@ -267,19 +276,33 @@ func _update_center() -> void:
 	if material == null:
 		return
 	var center := Vector2.ZERO
+	var half_size := water_size * 0.5
 	var camera := get_viewport().get_camera_3d()
 	if camera != null:
 		var local_camera := to_local(camera.global_position)
 		center = Vector2(local_camera.x, local_camera.z).snapped(Vector2.ONE * NEAR_STEP)
-	if center == _last_center and material == _last_material:
+		if infinite_ocean:
+			# 远裁剪面不是以相机为圆心的球；宽屏、大 FOV 和正交相机
+			# 的角点可能远超 camera.far，按整个视锥计算水平覆盖范围。
+			var viewport_size := camera.get_viewport().get_visible_rect().size
+			for depth: float in [camera.near, camera.far]:
+				for uv: Vector2 in [Vector2.ZERO, Vector2.RIGHT, Vector2.ONE, Vector2.DOWN]:
+					var point := to_local(camera.project_position(uv * viewport_size, depth))
+					var offset := (Vector2(point.x, point.z) - center).abs()
+					half_size = half_size.max(offset + Vector2.ONE * 128.0)
+	if center == _last_center and half_size == _last_half_size and material == _last_material:
 		return
 	material.set_shader_parameter("lod_center", center)
 	material.set_shader_parameter("use_distance_lod", true)
-	material.set_shader_parameter("water_half_size", water_size * 0.5)
+	material.set_shader_parameter("infinite_ocean", infinite_ocean)
+	material.set_shader_parameter("water_half_size", half_size)
 	material.set_shader_parameter("wave_full_distance", FULL_WAVE_DISTANCE)
 	material.set_shader_parameter("wave_end_distance", END_WAVE_DISTANCE)
 	_last_center = center
+	_last_half_size = half_size
 	_last_material = material
+	# 节点留在原点，实际顶点在着色器中移动；剔除范围必须一起移动。
+	_update_bounds(center if infinite_ocean else Vector2.ZERO, half_size)
 
 
 func build_water_mesh() -> ArrayMesh:
@@ -369,8 +392,8 @@ func _add_ring(outer: float, step: float, inner: float) -> void:
 
 
 func _add_far_border() -> void:
-	# 四个平面梯形延伸至配置的海面边界，其完整内边缘与精细网格共享。
-	# UV2 为着色器标记位置固定的边界顶点。
+	# 四个平面梯形的完整内边缘与精细网格共享。
+	# UV2 标记外圈角点，由着色器扩展到当前覆盖范围，无需重建网格。
 	var corners: Array[Vector2] = [
 		Vector2(-128.0, -128.0), Vector2(128.0, -128.0),
 		Vector2(128.0, 128.0), Vector2(-128.0, 128.0),

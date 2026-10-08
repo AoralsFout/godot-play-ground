@@ -18,6 +18,9 @@ const COMPASS_DIRECTIONS := {
 var chat: VBoxContainer
 var game_menu: Control
 var debug_info: Label
+var health_bar: ProgressBar
+var health_label: Label
+var _combat: Node
 var _fps_elapsed := 0.0
 var _free_camera_enabled := false
 
@@ -37,11 +40,12 @@ func _ready() -> void:
 	debug_info = UIStyle.label("", 16)
 	debug_info.name = "调试信息"
 	debug_info.theme = UIStyle.theme()
-	debug_info.position = Vector2(18, 14)
+	debug_info.position = Vector2(18, 90)
 	debug_info.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	debug_info.add_theme_color_override("font_outline_color", UIStyle.INK)
 	debug_info.add_theme_constant_override("outline_size", 4)
 	add_child(debug_info)
+	_create_health_bar()
 	_update_debug_info()
 
 
@@ -51,11 +55,13 @@ func set_free_camera_enabled(enabled: bool) -> void:
 
 
 func _update_debug_info() -> void:
-	var mode := "自由相机 · WASD 移动 · Space 上升 · Ctrl 下降 · Shift 加速" if _free_camera_enabled else "第三人称相机 · Q 持剑/收剑"
+	var mode := "自由相机 · WASD 移动 · Space 上升 · Ctrl 下降 · Shift 加速" if _free_camera_enabled else "第三人称 · Q 持剑/收剑 · 左键点按攻击 / 长按蓄力"
 	debug_info.text = "FPS: %d\n%s" % [Engine.get_frames_per_second(), mode]
 
 
 func _menu_opened() -> void:
+	if is_instance_valid(_combat):
+		_combat.cancel_attack()
 	if chat.is_open:
 		chat.close_chat()
 	chat.hide()
@@ -107,11 +113,49 @@ func _process(delta: float) -> void:
 	var center := map_texture.position + map_texture.size * 0.5
 	for direction: String in COMPASS_DIRECTIONS:
 		var label := $小地图.get_node(direction) as Label
-		var offset: Vector2 = COMPASS_DIRECTIONS[direction]
-		label.position = center + offset.rotated(heading) * 83.0 - label.size * 0.5
+		var map_offset: Vector2 = COMPASS_DIRECTIONS[direction]
+		label.position = center + map_offset.rotated(heading) * 83.0 - label.size * 0.5
 	map_camera.projection = target_camera.projection
 	map_camera.size = target_camera.size
 	map_camera.cull_mask = target_camera.cull_mask
 	map_camera.environment = target_camera.environment
 	map_camera.near = target_camera.near
 	map_camera.far = target_camera.far
+
+
+func _create_health_bar() -> void:
+	var panel := PanelContainer.new()
+	panel.name = "玩家生命面板"
+	panel.position = Vector2(18, 14)
+	panel.size = Vector2(270, 68)
+	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	panel.theme = UIStyle.theme()
+	panel.add_theme_stylebox_override("panel", UIStyle.box(Color(0.07, 0.14, 0.20, 0.88), 8, 10))
+	add_child(panel)
+	var column := VBoxContainer.new()
+	column.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	column.add_theme_constant_override("separation", 6)
+	panel.add_child(column)
+	health_label = UIStyle.label("生命 100 / 100", 16)
+	health_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	column.add_child(health_label)
+	health_bar = ProgressBar.new()
+	health_bar.name = "玩家血条"
+	health_bar.custom_minimum_size = Vector2(250, 16)
+	health_bar.show_percentage = false
+	health_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	health_bar.add_theme_stylebox_override("background", UIStyle.box(Color(0.20, 0.10, 0.14), 4, 0))
+	health_bar.add_theme_stylebox_override("fill", UIStyle.box(Color(0.88, 0.20, 0.29), 4, 0))
+	column.add_child(health_bar)
+
+func bind_player_health(combat: Node) -> void:
+	if is_instance_valid(_combat) and _combat.health_changed.is_connected(_update_health):
+		_combat.health_changed.disconnect(_update_health)
+	_combat = combat
+	_combat.health_changed.connect(_update_health)
+	_update_health(_combat.health, _combat.max_health)
+
+func _update_health(current: int, maximum: int) -> void:
+	health_bar.max_value = maximum
+	health_bar.value = current
+	health_label.text = "生命 %d / %d" % [current, maximum]

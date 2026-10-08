@@ -5,6 +5,8 @@
 [ext_resource type="PackedScene" uid="uid://2mco7em7kna4" path="res://assets/models/model.glb" id="3_5fc0o"]
 [ext_resource type="Script" uid="uid://bh6pgd2ad8g6y" path="res://scripts/player/玩家动画状态机.gd" id="4_7tyt6"]
 
+[ext_resource type="Script" path="res://scripts/combat/玩家战斗.gd" id="5_combat"]
+
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_76r4o"]
 height = 2.2154846
 
@@ -28,6 +30,8 @@ background_color = Color(1, 1, 1, 1)
 adjustment_enabled = true
 
 [node name="玩家" type="CharacterBody3D" unique_id=24142093]
+collision_layer = 8
+collision_mask = 1
 script = ExtResource("1_iy2xn")
 
 [node name="第三人称摄像机枢轴" type="Marker3D" parent="." unique_id=546699243]
@@ -77,3 +81,6 @@ far = 16000.0
 [node name="model" parent="." unique_id=1947823436 instance=ExtResource("3_5fc0o")]
 transform = Transform3D(0.495, 0, 0, 0, 0.495, 0, 0, 0, 0.495, 0, 0, 0)
 script = ExtResource("4_7tyt6")
+
+[node name="战斗" type="Node3D" parent="."]
+script = ExtResource("5_combat")

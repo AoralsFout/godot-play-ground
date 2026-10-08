@@ -49,6 +49,7 @@ func _sync_players() -> void:
 		player_container.add_child(avatar)
 		avatars[id] = avatar
 		if avatar.is_local:
+			gui.bind_player_health(avatar.combat)
 			avatar.free_camera_changed.connect(gui.set_free_camera_enabled)
 			gui.target_camera_path = gui.get_path_to(avatar.get_node("顶视图摄像机枢轴/顶视图摄像机"))
 		elif Session.player_states.has(id):

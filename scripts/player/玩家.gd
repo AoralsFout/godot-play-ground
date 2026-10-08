@@ -32,12 +32,14 @@ var _remote_vertical_speed := 0.0
 @onready var camera: Camera3D = $"第三人称摄像机枢轴/摄像机俯仰/摄像机伸缩臂/第三人称摄像机"
 @onready var map_camera_pivot: Marker3D = $"顶视图摄像机枢轴"
 @onready var map_indicator: Node3D = $"地图指示器"
+@onready var combat = $战斗
 @onready var player_model: PlayerAnimationStateMachine = $model
 
 var gravity: float = float(ProjectSettings.get_setting("physics/3d/default_gravity"))
 
 
 func _ready() -> void:
+	combat.initialize()
 	# 伸缩臂从角色内部探测，必须忽略角色自身的碰撞体。
 	camera_arm.add_excluded_object(get_rid())
 	camera.current = is_local
@@ -68,6 +70,14 @@ func _ready() -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if not is_local or Session.input_blocked:
 		return
+	if event.is_action_pressed("玩家攻击"):
+		combat.press_attack()
+		get_viewport().set_input_as_handled()
+		return
+	if event.is_action_released("玩家攻击"):
+		combat.release_attack()
+		get_viewport().set_input_as_handled()
+		return
 	if event.is_action_pressed("玩家切换持剑"):
 		toggle_sword()
 		get_viewport().set_input_as_handled()
@@ -90,6 +100,7 @@ func _unhandled_input(event: InputEvent) -> void:
 func toggle_sword() -> void:
 	if not is_local or Session.input_blocked or get_tree().paused:
 		return
+	combat.cancel_attack()
 	sword_equipped = not sword_equipped
 	player_model.set_sword_equipped(sword_equipped)
 
@@ -97,6 +108,7 @@ func toggle_sword() -> void:
 func toggle_free_camera() -> void:
 	if not is_local or Session.input_blocked or get_tree().paused:
 		return
+	combat.cancel_attack()
 	free_camera_enabled = not free_camera_enabled
 	if free_camera_enabled:
 		# 每次进入从当前第三人称视角出发，角色与原摄像机朝向保留。
@@ -144,7 +156,7 @@ func _physics_process(delta: float) -> void:
 		_sync_local_state(delta)
 		return
 	if is_on_floor():
-		if not Session.input_blocked and Input.is_action_just_pressed("玩家跳跃"):
+		if not Session.input_blocked and combat.phase == combat.Phase.IDLE and Input.is_action_just_pressed("玩家跳跃"):
 			velocity.y = jump_speed
 	else:
 		velocity.y -= gravity * delta
@@ -156,8 +168,8 @@ func _physics_process(delta: float) -> void:
 	move_direction.y = 0.0
 	move_direction = move_direction.normalized()
 
-	is_running = not Session.input_blocked and not input_direction.is_zero_approx() and Input.is_action_pressed("玩家奔跑")
-	var speed := run_speed if is_running else move_speed
+	is_running = not Session.input_blocked and not input_direction.is_zero_approx() and combat.movement_multiplier() == 1.0 and Input.is_action_pressed("玩家奔跑")
+	var speed: float = (run_speed if is_running else move_speed) * combat.movement_multiplier()
 	velocity.x = move_toward(velocity.x, move_direction.x * speed, acceleration * delta)
 	velocity.z = move_toward(velocity.z, move_direction.z * speed, acceleration * delta)
 	move_and_slide()
@@ -201,3 +213,7 @@ func apply_network_state(state: Dictionary) -> void:
 	if not _has_remote_state or global_position.distance_to(target) > 10.0:
 		global_position = target
 	_has_remote_state = true
+
+
+func take_damage(amount: int) -> void:
+	combat.take_damage(amount)

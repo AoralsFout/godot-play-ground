@@ -2,8 +2,10 @@ class_name PlayerAnimationStateMachine
 extends Node3D
 
 signal state_changed(previous_state: State, current_state: State)
+signal attack_impact
+signal attack_finished
 
-enum State { IDLE, WALK, RUN, JUMP, FALLING }
+enum State { IDLE, WALK, RUN, JUMP, FALLING, CHARGE, ATTACK }
 
 @export var idle_animation: StringName = &"Idle"
 @export var walk_animation: StringName = &"walk"
@@ -17,6 +19,10 @@ enum State { IDLE, WALK, RUN, JUMP, FALLING }
 @export var sword_jump_animation: StringName = &"jump-with-sword"
 @export var sword_falling_animation: StringName = &"falling-with-sword"
 @export_node_path("GeometryInstance3D") var sword_mesh_path: NodePath = ^"骨架/Skeleton3D/骨骼_023/立方体_001"
+@export_group("战斗动画")
+@export var charge_animation: StringName = &"attack-ready"
+@export var attack_animation: StringName = &"attack-1"
+@export_range(0.01, 0.7, 0.01) var attack_impact_seconds: float = 0.30
 @export_group("动画切换")
 @export_range(0.0, 1.0, 0.01) var blend_time: float = 0.2
 @export var walk_start_speed: float = 0.1
@@ -27,6 +33,7 @@ enum State { IDLE, WALK, RUN, JUMP, FALLING }
 
 var current_state: State = State.IDLE
 var sword_equipped := false
+var combat_active := false
 var _animation_player: AnimationPlayer
 @onready var _sword_mesh: GeometryInstance3D = get_node_or_null(sword_mesh_path) as GeometryInstance3D
 
@@ -47,6 +54,8 @@ func _ready() -> void:
 			push_error("玩家模型缺少 %s 动画，请检查动画名称。" % animation_name)
 			_animation_player = null
 			return
+	_setup_combat_animation()
+	_animation_player.animation_finished.connect(_on_animation_finished)
 	_play_state()
 
 
@@ -65,6 +74,8 @@ func _update_sword_visibility() -> void:
 
 
 func update_motion(motion_velocity: Vector3, delta: float = 0.0, is_running: bool = false, on_floor: bool = true) -> void:
+	if combat_active:
+		return
 	var horizontal_speed := Vector2(motion_velocity.x, motion_velocity.z).length()
 	if horizontal_speed > walk_stop_speed and delta > 0.0:
 		var target_yaw := atan2(motion_velocity.x, motion_velocity.z) + deg_to_rad(forward_yaw_offset_degrees)
@@ -92,6 +103,8 @@ func _transition_to(next_state: State) -> void:
 
 
 func _play_state() -> void:
+	if combat_active:
+		return
 	if _animation_player == null:
 		return
 	var animation_name := sword_idle_animation if sword_equipped else idle_animation
@@ -106,3 +119,53 @@ func _play_state() -> void:
 			animation_name = sword_falling_animation if sword_equipped else falling_animation
 	# 仅在进入状态时播放，避免每帧重置动画进度。
 	_animation_player.play(animation_name, blend_time)
+
+
+func _setup_combat_animation() -> void:
+	if not _animation_player.has_animation(charge_animation) or not _animation_player.has_animation(attack_animation):
+		push_error("模型缺少 attack-ready / attack-1 战斗动画")
+		return
+	# 使用每个模型独立的副本，避免改动 GLB 的共享动画资源。
+	var strike := _animation_player.get_animation(attack_animation).duplicate() as Animation
+	strike.loop_mode = Animation.LOOP_NONE
+	var track := strike.add_track(Animation.TYPE_METHOD)
+	var animation_root := _animation_player.get_node(_animation_player.root_node)
+	strike.track_set_path(track, animation_root.get_path_to(self))
+	strike.track_insert_key(track, clampf(attack_impact_seconds, 0.01, strike.length - 0.01), {"method": &"_emit_attack_impact", "args": []})
+	var library := AnimationLibrary.new()
+	library.add_animation(&"strike", strike)
+	_animation_player.add_animation_library(&"combat", library)
+
+func face_combat_direction(forward: Vector3) -> void:
+	global_rotation.y = atan2(forward.x, forward.z) + deg_to_rad(forward_yaw_offset_degrees)
+
+func begin_charge() -> void:
+	combat_active = true
+	_transition_to(State.CHARGE)
+	_animation_player.play(charge_animation, 0.08)
+
+func play_attack() -> void:
+	combat_active = true
+	_transition_to(State.ATTACK)
+	_animation_player.play(&"combat/strike", 0.04)
+
+func _emit_attack_impact() -> void:
+	if combat_active and current_state == State.ATTACK:
+		attack_impact.emit()
+
+func _on_animation_finished(animation_name: StringName) -> void:
+	if not combat_active:
+		return
+	if animation_name == charge_animation and current_state == State.CHARGE:
+		# 准备动作抬剑后保留最后一帧，长按时不会反复抬剑。
+		_animation_player.pause()
+	elif animation_name == &"combat/strike" and current_state == State.ATTACK:
+		cancel_combat()
+		attack_finished.emit()
+
+func cancel_combat() -> void:
+	if not combat_active:
+		return
+	combat_active = false
+	current_state = State.IDLE
+	_play_state()

@@ -5,6 +5,8 @@
 [ext_resource type="Script" uid="uid://s3tdnuqhc40n" path="res://scripts/world/地形场景.gd" id="3_terrain"]
 [ext_resource type="PackedScene" uid="uid://b3xewgmghgdn7" path="res://assets/models/超大地形v2.glb" id="4_30ujk"]
 
+[ext_resource type="PackedScene" path="res://assets/models/超大地形v2_路网桥梁.glb" id="5_roads"]
+
 [node name="地图" type="Node3D" unique_id=722592549]
 script = ExtResource("3_terrain")
 terrain_material = ExtResource("2_elevation")
@@ -13,3 +15,5 @@ terrain_material = ExtResource("2_elevation")
 visible = false
 
 [node name="超大地形v2" parent="." unique_id=1061065850 instance=ExtResource("4_30ujk")]
+
+[node name="路网" parent="超大地形v2" instance=ExtResource("5_roads")]

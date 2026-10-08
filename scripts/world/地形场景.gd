@@ -38,11 +38,25 @@ func _apply_terrain() -> void:
 		var instance := node as MeshInstance3D
 		instance.layers = 3
 		instance.gi_mode = GeometryInstance3D.GI_MODE_DISABLED
-		if str(instance.name).begins_with("巨构肋柱") or str(instance.name) == "道路":
+		if str(instance.name).begins_with("巨构肋柱") or str(instance.name).begins_with("道路") or str(instance.name).begins_with("桥梁"):
 			_enable_double_sided_collision(instance)
 		if str(instance.name).begins_with("地形"):
 			instance.material_override = terrain_material
+	_disable_original_v2_terrain(terrain)
 	_sea_level = INF
+
+
+func _disable_original_v2_terrain(terrain: Node3D) -> void:
+	# 削坡填方地形同时替换旧地表的渲染和碰撞，避免山体穿过平整路面。
+	if terrain.get_node_or_null("路网/地形_整平") == null:
+		return
+	var original := terrain.get_node_or_null("地形") as MeshInstance3D
+	if original == null:
+		return
+	original.visible = false
+	for body: StaticBody3D in original.find_children("*", "StaticBody3D", true, false):
+		body.collision_layer = 0
+		body.collision_mask = 0
 
 
 func _disable_hidden_terrain_collision() -> void:

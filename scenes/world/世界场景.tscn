@@ -21,7 +21,7 @@ shader_parameter/twilight = 0.0
 shader_parameter/sky_moon_direction = Vector3(-0.9033546, 0.28568837, 0.3198948)
 shader_parameter/moon_color = Color(0.76, 0.84, 1, 1)
 shader_parameter/moon_visibility = 0.0
-shader_parameter/moon_angular_radius = 0.010471975511965976
+shader_parameter/moon_angular_radius = 0.01047197551196597
 
 [sub_resource type="Sky" id="Sky_tgaxo"]
 sky_material = SubResource("ShaderMaterial_i17u0")
@@ -120,6 +120,7 @@ shader_parameter/sky_zenith = Color(0.18, 0.43, 0.78, 1)
 shader_parameter/sky_horizon = Color(0.68, 0.82, 0.94, 1)
 shader_parameter/water_ambient_light = Vector3(0.12, 0.15, 0.18)
 shader_parameter/use_distance_lod = true
+shader_parameter/infinite_ocean = false
 shader_parameter/lod_center = Vector2(0, 0)
 shader_parameter/water_half_size = Vector2(4100, 4100)
 shader_parameter/wave_full_distance = 64.0
@@ -4797,7 +4798,6 @@ shader_parameter/bump_strength = 0.12
 [node name="世界环境" type="WorldEnvironment" parent="." unique_id=945451979]
 environment = SubResource("Environment_i25e8")
 script = ExtResource("6_sky_controller")
-sun_auto_rotate = true
 sun_rotation_speed = 5.0
 sun_rotation_editor_preview = false
 
@@ -4823,7 +4823,6 @@ sky_mode = 1
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 15, 0)
 layers = 524288
 cast_shadow = 0
-custom_aabb = AABB(-4100, -3, -4100, 8200, 6, 8200)
 gi_mode = 0
 script = ExtResource("3_water_lod")
 water_material = SubResource("ShaderMaterial_ksbe4")

@@ -29,7 +29,6 @@ adjustment_enabled = true
 
 [node name="玩家" type="CharacterBody3D" unique_id=24142093]
 script = ExtResource("1_iy2xn")
-move_speed = 120.0
 
 [node name="第三人称摄像机枢轴" type="Marker3D" parent="." unique_id=546699243]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, 0)

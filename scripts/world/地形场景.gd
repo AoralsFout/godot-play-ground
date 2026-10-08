@@ -17,17 +17,54 @@ func _ready() -> void:
 	_sync_sea_level()
 
 
+#func _apply_terrain() -> void:
+	#var terrain := get_node_or_null("超大地形")
+	#if terrain == null:
+		#return
+	#for node in terrain.find_children("*", "MeshInstance3D", true, false):
+		#var instance := node as MeshInstance3D
+		#instance.layers = 3
+		#instance.gi_mode = GeometryInstance3D.GI_MODE_DISABLED
+		#if str(instance.name).begins_with("地形块_"):
+			#instance.material_override = terrain_material
+	#_sea_level = INF
+
 func _apply_terrain() -> void:
-	var terrain := get_node_or_null("超大地形")
+	_disable_hidden_terrain_collision()
+	var terrain := get_node_or_null("超大地形v2")
 	if terrain == null:
 		return
 	for node in terrain.find_children("*", "MeshInstance3D", true, false):
 		var instance := node as MeshInstance3D
 		instance.layers = 3
 		instance.gi_mode = GeometryInstance3D.GI_MODE_DISABLED
-		if str(instance.name).begins_with("地形块_"):
+		if str(instance.name).begins_with("巨构肋柱") or str(instance.name) == "道路":
+			_enable_double_sided_collision(instance)
+		if str(instance.name).begins_with("地形"):
 			instance.material_override = terrain_material
 	_sea_level = INF
+
+
+func _disable_hidden_terrain_collision() -> void:
+	# 隐藏旧地图只影响渲染；它的碰撞也必须关闭，避免与 v2 重叠。
+	var old_terrain := get_node_or_null("超大地形") as Node3D
+	if old_terrain == null or old_terrain.visible:
+		return
+	for body: StaticBody3D in old_terrain.find_children("*", "StaticBody3D", true, false):
+		body.collision_layer = 0
+		body.collision_mask = 0
+
+
+func _enable_double_sided_collision(instance: MeshInstance3D) -> void:
+	# -col 导入的三角网格默认只有单面碰撞。镜像肋柱和道路的背面也需阻挡玩家。
+	for collision: CollisionShape3D in instance.find_children("*", "CollisionShape3D", true, false):
+		var shape := collision.shape as ConcavePolygonShape3D
+		if shape == null or shape.backface_collision:
+			continue
+		# 导入资源可能由多个实例共享，避免修改资源影响其他模型。
+		shape = shape.duplicate() as ConcavePolygonShape3D
+		shape.backface_collision = true
+		collision.shape = shape
 
 
 func _process(_delta: float) -> void:

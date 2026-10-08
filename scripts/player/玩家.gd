@@ -3,6 +3,7 @@ extends CharacterBody3D
 signal free_camera_changed(enabled: bool)
 
 @export var move_speed: float = 6.0
+@export var run_speed: float = 12.0
 @export var acceleration: float = 24.0
 @export var jump_speed: float = 5.0
 @export var mouse_sensitivity: float = 0.0025
@@ -14,11 +15,15 @@ var free_camera: Camera3D
 
 var peer_id := 1
 var is_local := true
+var is_running := false
 var player_nickname := "玩家"
 var _sync_elapsed := 0.0
 var _remote_position := Vector3.ZERO
 var _remote_yaw := 0.0
 var _has_remote_state := false
+var _remote_is_running := false
+var _remote_on_floor := true
+var _remote_vertical_speed := 0.0
 
 @onready var camera_yaw: Marker3D = $"第三人称摄像机枢轴"
 @onready var camera_pitch: Marker3D = $"第三人称摄像机枢轴/摄像机俯仰"
@@ -86,6 +91,7 @@ func toggle_free_camera() -> void:
 		free_camera.global_transform = camera.global_transform
 		free_camera.make_current()
 		velocity = Vector3.ZERO
+		is_running = false
 		player_model.update_motion(Vector3.ZERO)
 	else:
 		camera.make_current()
@@ -114,10 +120,16 @@ func _physics_process(delta: float) -> void:
 			global_position = global_position.lerp(_remote_position, minf(delta * 16.0, 1.0))
 			camera_yaw.rotation.y = lerp_angle(camera_yaw.rotation.y, _remote_yaw, minf(delta * 16.0, 1.0))
 			_update_map_heading()
-		player_model.update_motion((global_position - previous_position) / maxf(delta, 0.000001), delta)
+		is_running = _remote_is_running
+		var remote_motion := (global_position - previous_position) / maxf(delta, 0.000001)
+		# 远程角色没有地面碰撞，使用同步的接地状态和竖直速度判断空中阶段。
+		remote_motion.y = _remote_vertical_speed
+		player_model.update_motion(remote_motion, delta, is_running, _remote_on_floor)
 		return
 	if free_camera_enabled:
+		is_running = false
 		player_model.update_motion(Vector3.ZERO)
+		_sync_local_state(delta)
 		return
 	if is_on_floor():
 		if not Session.input_blocked and Input.is_action_just_pressed("玩家跳跃"):
@@ -132,14 +144,29 @@ func _physics_process(delta: float) -> void:
 	move_direction.y = 0.0
 	move_direction = move_direction.normalized()
 
-	velocity.x = move_toward(velocity.x, move_direction.x * move_speed, acceleration * delta)
-	velocity.z = move_toward(velocity.z, move_direction.z * move_speed, acceleration * delta)
+	is_running = not Session.input_blocked and not input_direction.is_zero_approx() and Input.is_action_pressed("玩家奔跑")
+	var speed := run_speed if is_running else move_speed
+	velocity.x = move_toward(velocity.x, move_direction.x * speed, acceleration * delta)
+	velocity.z = move_toward(velocity.z, move_direction.z * speed, acceleration * delta)
 	move_and_slide()
-	player_model.update_motion(get_real_velocity(), delta)
+	var motion_velocity := get_real_velocity()
+	motion_velocity.y = velocity.y
+	player_model.update_motion(motion_velocity, delta, is_running, is_on_floor())
+	_sync_local_state(delta)
+
+
+func _sync_local_state(delta: float) -> void:
 	_sync_elapsed += delta
 	if _sync_elapsed >= 0.05:
 		_sync_elapsed = 0.0
-		Session.publish_local_state({"position": global_position, "yaw": camera_yaw.rotation.y})
+		Session.publish_local_state({
+			"position": global_position,
+			"yaw": camera_yaw.rotation.y,
+			"is_running": is_running,
+			# 自由相机冻结角色，远程模型也应保持静止动画。
+			"on_floor": is_on_floor() or free_camera_enabled,
+			"vertical_speed": velocity.y,
+		})
 
 
 func apply_network_state(state: Dictionary) -> void:
@@ -150,6 +177,12 @@ func apply_network_state(state: Dictionary) -> void:
 		return
 	_remote_position = target
 	_remote_yaw = state["yaw"]
+	_remote_is_running = state.get("is_running", false) == true
+	_remote_on_floor = state.get("on_floor", true) == true
+	var vertical_speed = state.get("vertical_speed", 0.0)
+	_remote_vertical_speed = 0.0
+	if (vertical_speed is float or vertical_speed is int) and is_finite(float(vertical_speed)):
+		_remote_vertical_speed = float(vertical_speed)
 	if not _has_remote_state or global_position.distance_to(target) > 10.0:
 		global_position = target
 	_has_remote_state = true

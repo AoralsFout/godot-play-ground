@@ -10,6 +10,14 @@ enum State { IDLE, WALK, RUN, JUMP, FALLING }
 @export var run_animation: StringName = &"run"
 @export var jump_animation: StringName = &"jump"
 @export var falling_animation: StringName = &"falling"
+@export_group("持剑动画")
+@export var sword_idle_animation: StringName = &"Idle-with-sword"
+@export var sword_walk_animation: StringName = &"walk-with-sword"
+@export var sword_run_animation: StringName = &"run-with-sword"
+@export var sword_jump_animation: StringName = &"jump-with-sword"
+@export var sword_falling_animation: StringName = &"falling-with-sword"
+@export_node_path("GeometryInstance3D") var sword_mesh_path: NodePath = ^"骨架/Skeleton3D/骨骼_023/立方体_001"
+@export_group("动画切换")
 @export_range(0.0, 1.0, 0.01) var blend_time: float = 0.2
 @export var walk_start_speed: float = 0.1
 @export var walk_stop_speed: float = 0.05
@@ -18,7 +26,9 @@ enum State { IDLE, WALK, RUN, JUMP, FALLING }
 @export_range(-180.0, 180.0, 1.0) var forward_yaw_offset_degrees: float = 180
 
 var current_state: State = State.IDLE
+var sword_equipped := false
 var _animation_player: AnimationPlayer
+@onready var _sword_mesh: GeometryInstance3D = get_node_or_null(sword_mesh_path) as GeometryInstance3D
 
 
 func _ready() -> void:
@@ -27,12 +37,31 @@ func _ready() -> void:
 		push_error("玩家模型缺少 AnimationPlayer，无法初始化动画状态机。")
 		return
 	_animation_player = animation_players[0] as AnimationPlayer
-	for animation_name: StringName in [idle_animation, walk_animation, run_animation, jump_animation, falling_animation]:
+	if _sword_mesh == null:
+		push_error("玩家模型缺少剑网格，请检查 Sword Mesh Path。")
+	# 装备状态控制可见性，避免空手下落动画中残留的剑缩放轨道显示武器。
+	_update_sword_visibility()
+	for animation_name: StringName in [idle_animation, walk_animation, run_animation, jump_animation, falling_animation,
+			sword_idle_animation, sword_walk_animation, sword_run_animation, sword_jump_animation, sword_falling_animation]:
 		if not _animation_player.has_animation(animation_name):
 			push_error("玩家模型缺少 %s 动画，请检查动画名称。" % animation_name)
 			_animation_player = null
 			return
 	_play_state()
+
+
+func set_sword_equipped(equipped: bool) -> void:
+	if sword_equipped == equipped:
+		return
+	sword_equipped = equipped
+	_update_sword_visibility()
+	# 即使移动状态没变，装备切换也立即切换到当前动作的对应动画。
+	_play_state()
+
+
+func _update_sword_visibility() -> void:
+	if _sword_mesh != null:
+		_sword_mesh.visible = sword_equipped
 
 
 func update_motion(motion_velocity: Vector3, delta: float = 0.0, is_running: bool = false, on_floor: bool = true) -> void:
@@ -65,15 +94,15 @@ func _transition_to(next_state: State) -> void:
 func _play_state() -> void:
 	if _animation_player == null:
 		return
-	var animation_name := idle_animation
+	var animation_name := sword_idle_animation if sword_equipped else idle_animation
 	match current_state:
 		State.WALK:
-			animation_name = walk_animation
+			animation_name = sword_walk_animation if sword_equipped else walk_animation
 		State.RUN:
-			animation_name = run_animation
+			animation_name = sword_run_animation if sword_equipped else run_animation
 		State.JUMP:
-			animation_name = jump_animation
+			animation_name = sword_jump_animation if sword_equipped else jump_animation
 		State.FALLING:
-			animation_name = falling_animation
+			animation_name = sword_falling_animation if sword_equipped else falling_animation
 	# 仅在进入状态时播放，避免每帧重置动画进度。
 	_animation_player.play(animation_name, blend_time)

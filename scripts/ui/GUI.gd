@@ -51,7 +51,7 @@ func set_free_camera_enabled(enabled: bool) -> void:
 
 
 func _update_debug_info() -> void:
-	var mode := "自由相机 · WASD 移动 · Space 上升 · Ctrl 下降 · Shift 加速" if _free_camera_enabled else "第三人称相机"
+	var mode := "自由相机 · WASD 移动 · Space 上升 · Ctrl 下降 · Shift 加速" if _free_camera_enabled else "第三人称相机 · Q 持剑/收剑"
 	debug_info.text = "FPS: %d\n%s" % [Engine.get_frames_per_second(), mode]
 
 

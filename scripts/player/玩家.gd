@@ -16,6 +16,7 @@ var free_camera: Camera3D
 var peer_id := 1
 var is_local := true
 var is_running := false
+var sword_equipped := false
 var player_nickname := "玩家"
 var _sync_elapsed := 0.0
 var _remote_position := Vector3.ZERO
@@ -67,6 +68,10 @@ func _ready() -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if not is_local or Session.input_blocked:
 		return
+	if event.is_action_pressed("玩家切换持剑"):
+		toggle_sword()
+		get_viewport().set_input_as_handled()
+		return
 	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 		if free_camera_enabled:
 			free_camera.rotation.y -= event.relative.x * mouse_sensitivity
@@ -80,6 +85,13 @@ func _unhandled_input(event: InputEvent) -> void:
 			deg_to_rad(45.0)
 		)
 		_update_map_heading()
+
+
+func toggle_sword() -> void:
+	if not is_local or Session.input_blocked or get_tree().paused:
+		return
+	sword_equipped = not sword_equipped
+	player_model.set_sword_equipped(sword_equipped)
 
 
 func toggle_free_camera() -> void:
@@ -163,6 +175,7 @@ func _sync_local_state(delta: float) -> void:
 			"position": global_position,
 			"yaw": camera_yaw.rotation.y,
 			"is_running": is_running,
+			"sword_equipped": sword_equipped,
 			# 自由相机冻结角色，远程模型也应保持静止动画。
 			"on_floor": is_on_floor() or free_camera_enabled,
 			"vertical_speed": velocity.y,
@@ -178,6 +191,8 @@ func apply_network_state(state: Dictionary) -> void:
 	_remote_position = target
 	_remote_yaw = state["yaw"]
 	_remote_is_running = state.get("is_running", false) == true
+	sword_equipped = state.get("sword_equipped", false) == true
+	player_model.set_sword_equipped(sword_equipped)
 	_remote_on_floor = state.get("on_floor", true) == true
 	var vertical_speed = state.get("vertical_speed", 0.0)
 	_remote_vertical_speed = 0.0

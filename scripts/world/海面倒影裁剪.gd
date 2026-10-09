@@ -65,6 +65,11 @@ func update(height: float) -> void:
 				_overrides.append({"node": weakref(node), "surface": surface, "original": node.get_surface_override_material(surface)})
 				node.set_surface_override_material(surface, _clipped_material(source))
 	_pending.clear()
+	# 材质被替换后仍需跟随源颜色；albedo_color 的修改不触发 changed 信号。
+	for source: BaseMaterial3D in _materials:
+		var material: ShaderMaterial = _materials[source]
+		if material.get_shader_parameter("ocean_albedo") != source.albedo_color:
+			material.set_shader_parameter("ocean_albedo", source.albedo_color)
 
 
 func _clipped_material(source: BaseMaterial3D) -> ShaderMaterial:

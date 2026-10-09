@@ -3,6 +3,8 @@
 [ext_resource type="Script" uid="uid://dtujgs6bij21l" path="res://scripts/combat/史莱姆.gd" id="1_slime"]
 [ext_resource type="PackedScene" uid="uid://dpp5oyyglyav3" path="res://assets/models/史莱姆.glb" id="2_model"]
 
+[ext_resource type="AnimationNodeBlendTree" path="res://animations/史莱姆动画树.tres" id="3_tree"]
+
 [sub_resource type="SphereShape3D" id="Shape"]
 radius = 0.65
 
@@ -24,3 +26,7 @@ transform = Transform3D(3.774895e-08, 0, 0.5, 0, 0.5, 0, -0.5, 0, 3.774895e-08, 
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.55, 0)
 pixel_size = 0.012
 billboard = 1
+
+[node name="AnimationTree" type="AnimationTree" parent="."]
+tree_root = ExtResource("3_tree")
+callback_mode_process = 0

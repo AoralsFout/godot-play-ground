@@ -7,6 +7,8 @@
 
 [ext_resource type="Script" path="res://scripts/combat/玩家战斗.gd" id="5_combat"]
 
+[ext_resource type="AnimationNodeBlendTree" path="res://animations/玩家动画树.tres" id="6_tree"]
+
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_76r4o"]
 height = 2.2154846
 
@@ -84,3 +86,8 @@ script = ExtResource("4_7tyt6")
 
 [node name="战斗" type="Node3D" parent="."]
 script = ExtResource("5_combat")
+
+[node name="AnimationTree" type="AnimationTree" parent="model"]
+tree_root = ExtResource("6_tree")
+anim_player = NodePath("../AnimationPlayer")
+callback_mode_process = 0

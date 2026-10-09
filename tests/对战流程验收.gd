@@ -15,7 +15,7 @@ func check(condition: bool, message: String) -> void:
 	checks += 1
 	if not condition:
 		failures.append(message)
-		print("FAIL: " + message + " phase=%s anim=%s t=%s health=%s pos=%s enemy=%s" % [combat.phase, animator.current_animation, animator.current_animation_position, slime.health if is_instance_valid(slime) else -1, player.global_position, slime.global_position if is_instance_valid(slime) else Vector3.ZERO])
+		print("FAIL: " + message + " phase=%s anim=%s t=%s health=%s pos=%s enemy=%s" % [combat.phase, player.player_model.get_combat_node(), player.player_model.get_motion_play_position(), slime.health if is_instance_valid(slime) else -1, player.global_position, slime.global_position if is_instance_valid(slime) else Vector3.ZERO])
 
 func wait(seconds: float) -> void:
 	await get_tree().create_timer(seconds).timeout
@@ -71,6 +71,7 @@ func _run() -> void:
 	combat = player.combat
 	animator = player.player_model.find_children("*", "AnimationPlayer", true, false)[0]
 	slime = load("res://scenes/enemies/史莱姆.tscn").instantiate()
+	slime.max_health = 140
 	add_child(slime)
 	slime.set_physics_process(false)
 	gui = load("res://scenes/ui/GUI.tscn").instantiate()
@@ -103,7 +104,19 @@ func _run() -> void:
 	check(combat.phase == combat.Phase.CHARGING and combat.indicator.visible, "长按进入准备蓄力")
 	check(slime.selected, "长窄区域内选中史莱姆")
 	check(player.camera_arm.spring_length < 4.0 and player.camera.fov < 75.0, "蓄力拉近镜头")
-	check(animator.current_animation == "attack-ready", "蓄力使用准备动画")
+	check(player.player_model.get_combat_node() in [&"Charge", &"Hold"], "蓄力使用准备动画")
+	# 蓄力期间使用真实移动输入，腿部应迈步且保持减速和上半身战斗。
+	Input.action_press("玩家前移")
+	await wait(0.25)
+	var skeleton: Skeleton3D = player.player_model.find_children("*", "Skeleton3D", true, false)[0]
+	var leg := skeleton.find_bone(&"骨骼.016")
+	var leg_pose := skeleton.get_bone_pose(leg)
+	await wait(0.25)
+	check(not skeleton.get_bone_pose(leg).is_equal_approx(leg_pose), "真实蓄力移动时腿部继续迈步")
+	check(player.player_model.motion_state == player.player_model.State.WALK and player.player_model.current_state == player.player_model.State.CHARGE, "蓄力与行走状态同时运行")
+	check(is_equal_approx(Vector2(player.velocity.x, player.velocity.z).length(), player.move_speed * 0.35), "蓄力移动保留减速规则")
+	Input.action_release("玩家前移")
+	await wait(0.2)
 	var pale: Color = combat.indicator.material_override.albedo_color
 	await screenshot("charge-light.png")
 	slime.global_position = player.global_position + Vector3(3, -1.10, -2)

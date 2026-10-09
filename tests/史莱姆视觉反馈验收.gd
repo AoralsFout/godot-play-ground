@@ -51,7 +51,7 @@ func _run() -> void:
 	reflection_clip.setup(viewport, 15.0)
 	reflection_clip.update(15.0)
 	slime.set_physics_process(false)
-	slime._animator.stop()
+	slime.animation_tree.active = false
 	slime.health_bar.hide()
 	slime._time = 0.825
 	slime._update_color()

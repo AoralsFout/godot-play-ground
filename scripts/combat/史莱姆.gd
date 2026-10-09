@@ -23,6 +23,9 @@ var _cooldown := 0.0
 var _attack_direction := Vector3.FORWARD
 var _knockback := Vector3.ZERO
 var _animator: AnimationPlayer
+var _animation_playback: AnimationNodeStateMachinePlayback
+var _current_animation: StringName = &""
+@onready var animation_tree: AnimationTree = $AnimationTree
 var _body_material: StandardMaterial3D
 @onready var visual: Node3D = $外观
 @onready var body: MeshInstance3D = $外观/模型/身体
@@ -163,6 +166,7 @@ func _die() -> void:
 
 
 func _setup_animations() -> void:
+	animation_tree.active = false
 	_animator = visual.find_children("*", "AnimationPlayer", true, false)[0] as AnimationPlayer
 	var library := AnimationLibrary.new()
 	for animation_name: StringName in _animator.get_animation_list():
@@ -171,8 +175,18 @@ func _setup_animations() -> void:
 		library.add_animation(animation_name, animation)
 	_animator.remove_animation_library(&"")
 	_animator.add_animation_library(&"", library)
+	animation_tree.anim_player = animation_tree.get_path_to(_animator)
+	animation_tree.root_node = animation_tree.get_path_to(_animator.get_node(_animator.root_node))
+	animation_tree.tree_root = animation_tree.tree_root.duplicate(true)
+	_animation_playback = animation_tree.get("parameters/StateMachine/playback")
+	animation_tree.active = true
 
 func _play_animation(animation_name: StringName, speed: float = 1.0) -> void:
-	if _animator.current_animation == animation_name:
+	if _current_animation == animation_name:
 		return
-	_animator.play(animation_name, 0.08, speed)
+	_current_animation = animation_name
+	animation_tree.set("parameters/Speed/scale", speed)
+	if _animation_playback.is_playing():
+		_animation_playback.travel(animation_name)
+	else:
+		_animation_playback.start(animation_name)

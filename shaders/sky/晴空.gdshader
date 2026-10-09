@@ -1,17 +1,31 @@
+// 根据天空控制器传入的日月状态绘制晴空和天体。
+// 连续混合天顶、地平线及晨昏颜色，不依赖方向光的排序。
+
 shader_type sky;
 render_mode disable_fog;
 
+// 晴空天顶颜色；改变高仰角处的天空渐变。
 uniform vec4 zenith_color : source_color = vec4(0.18, 0.43, 0.78, 1.0);
+// 晴空地平线颜色；改变低仰角天空及晨昏过渡。
 uniform vec4 horizon_color : source_color = vec4(0.68, 0.82, 0.94, 1.0);
 // 由天空控制器传入太阳状态，不依赖光源排序。
+// 天空中指向太阳的世界单位向量；由天空控制器同步以定位太阳和辉光。
 uniform vec3 sky_sun_direction = vec3(0.45, 0.46, 0.77);
+// 太阳直射颜色；由天空同步，最终与云光强相乘。
 uniform vec4 sun_color : source_color = vec4(1.0, 0.97, 0.90, 1.0);
+// 天空太阳可见权重（0 至 1）；控制太阳圆盘与周边辉光。
 uniform float sun_visibility = 1.0;
+// 日间权重（0 至 1）；影响星空和白天空的混合。
 uniform float daylight : hint_range(0.0, 1.0) = 1.0;
+// 晨昏权重（0 至 1）；影响日出日落的暖色分布。
 uniform float twilight : hint_range(0.0, 1.0) = 0.0;
+// 天空中指向月亮的世界单位向量；决定独立月盘的方位和高度。
 uniform vec3 sky_moon_direction = vec3(0.0, 0.6, -0.8);
+// 月光直射颜色；天空与云共用，影响夜间云受光色调。
 uniform vec4 moon_color : source_color = vec4(0.76, 0.84, 1.0, 1.0);
+// 天空月亮可见权重（0 至 1）；由开关、高度和昼夜状态共同决定。
 uniform float moon_visibility = 0.0;
+// 月盘角半径（弧度）；控制器把完整角直径换算后传入，影响天空中的月盘大小。
 uniform float moon_angular_radius = 0.010472;
 
 vec3 sun_direction() {

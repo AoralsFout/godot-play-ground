@@ -1,19 +1,34 @@
+// 积分球形大气的瑞利和米氏散射，供云融合及光束合成共用。
+// 参数由体积云控制器同步，倒影视角先修正观察位置以避免星球错误遮挡。
+
 // PDF 101 的 GetAtmosphere(depth, angle)：这里用米制、分层介质积分近似。
 // 原文没有给出 Decima 的大气查找表/系数，这些系数是本项目的实现选择。
+// 大气总体密度倍率；提高会增强远景消光和大气融合。
 uniform float atmosphere_density : hint_range(0.0, 3.0) = 1.0;
+// 日月光束开关；仅在计算后处理有效时产生光束，基础预览不绘制。
 uniform bool light_shafts_enabled = true;
+// 光束合成强度倍率；0 隐藏光束，不改变云密度。
 uniform float light_shaft_strength : hint_range(0.0, 3.0) = 1.0;
+// 光束散射开始距离（米）；近景逐渐启用，几何深度会截断被遮挡部分。
 uniform float light_shaft_start : hint_range(500.0, 10000.0) = 500.0;
+// 径向光束模糊采样次数；越大越平滑，同时增加计算成本。
 uniform int light_shaft_samples : hint_range(16, 64) = 64;
 // 高光半强度角（度），不是太阳圆盘大小。宽高光才能让多个云隙形成光束。
+// 光源周围高光的半强度角（度）；越大越远的云隙也参与光束，不改变日月盘尺寸。
 uniform float light_shaft_spread : hint_range(5.0, 60.0) = 35.0;
+// 径向光束延伸比例；越大条带延伸越远，受光源屏幕位置影响。
 uniform float light_shaft_length : hint_range(0.1, 0.98) = 0.94;
+// 光束高光源沿径向的偏移比例；改变条带起始分布，与延伸长度共同影响形状。
 uniform float light_shaft_offset : hint_range(0.0, 0.3) = 0.12;
 // 气溶胶影响大气融合和光束，保留同一介质的颜色/消光关系。
+// 米氏散射气溶胶密度倍率；影响光束和大气融合的散射及消光。
 uniform float atmosphere_mie_density : hint_range(0.0, 3.0) = 1.0;
+// 后处理输出通道；0 为最终画面，1 至 8 依次显示直射、大气、环境、不透明度、光束、种子高光、米氏贡献和月光。
 uniform int post_debug_view = 0;
 // 镜像摄像机位于海平面下；云使用镜像回海面上的观察位置，避免被星球裁掉。
+// 倒影视角标记；开启后镜像修正云观察位置，避免海面下的虚拟相机被星球遮挡。
 uniform bool cloud_reflection_view = false;
+// 镜像海平面世界高度（米）；用于恢复云观察位置，应与真实水面一致。
 uniform float cloud_reflection_height = 15.0;
 
 // x/y 为累积 Rayleigh / Mie 光学深度。径向高度与视角共同决定密度。

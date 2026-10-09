@@ -1,18 +1,32 @@
+// 采样周期三维噪声并组合分形基础形状和细节侵蚀。
+// 真实逐级缩小纹理按世界采样足迹过滤，保持不同步进预算下的云形稳定。
+
 #include "res://shaders/clouds/cloud_math.gdshaderinc"
 
 // 数值纹理，不进行 sRGB 转换。基础噪声由 FastNoiseLite 在三维生成。
+// 周期三维柏林数值纹理；提供基础云形，逐级缩小过滤用于降低远景闪烁。
 uniform sampler3D perlin_texture : repeat_enable, filter_linear_mipmap;
+// 周期三维沃利数值纹理；提供基础形状组合和高频侵蚀。
 uniform sampler3D worley_texture : repeat_enable, filter_linear_mipmap;
+// 三维噪声纹理可用标记；控制器完成上传后开启，未就绪时使用回退密度。
 uniform bool noise_ready = false;
 // 0 保留仅云图的旧场景；1/2 统一使用一种三维噪声；3 按 R/G 分别计算。
+// 密度噪声模式；0 仅云图，1 柏林，2 柏林与沃利组合，3 按红绿通道分别使用两类噪声。
 uniform int density_mode : hint_enum("Map only", "Perlin", "Perlin-Worley", "R Perlin / G Perlin-Worley") = 0;
+// 三维基础噪声周期（米）；越大云团尺度越大，改变后云内光照和地面云影一起变化。
 uniform float noise_repeat_distance : hint_range(200.0, 10000.0) = 2000.0;
+// 基础分形噪声层数；越大增加高频形状和采样成本。
 uniform int noise_octaves : hint_range(1, 6) = 4;
+// 每层分形噪声的振幅倍率；越大高频细节越明显，使用归一化控制总体对比度。
 uniform float noise_gain : hint_range(0.0, 1.0) = 0.5;
+// 相邻分形噪声层的频率倍率；1 重复同频率，越大细节尺度分离越明显。
 uniform int noise_lacunarity : hint_range(1, 4) = 2;
 // 控制器在参数变化时预计算；独立使用此 include 时，负值走原始计算。
+// 基础分形噪声归一化系数；由控制器预计算，负值在着色器内按层数重新计算。
 uniform float noise_normalization = -1.0;
+// 细节侵蚀强度；越大云边和云内孔洞越多，只减少密度。
 uniform float erosion_strength : hint_range(0.0, 1.0) = 0.5;
+// 侵蚀噪声相对基础噪声的频率倍率；越大侵蚀细节越小。
 uniform float erosion_frequency : hint_range(1.0, 16.0) = 4.0;
 
 // 当前实时组合噪声的前两层负责大型，高频层负责演变。

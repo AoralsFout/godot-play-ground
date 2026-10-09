@@ -1,9 +1,18 @@
+// 根据天空控制器的昼夜颜色生成云层远景雾色。
+// 主视图、基础预览及海面倒影共享同一色盘。
+
 // 沿用本项目天空的昼夜色盘；云的远景雾色与海面反射一致。
+// 云远景大气融合使用的天顶颜色；由天空控制器同步。
 uniform vec4 cloud_sky_zenith : source_color = vec4(0.18, 0.43, 0.78, 1.0);
+// 云远景大气融合使用的地平线颜色；影响低角度云层雾色。
 uniform vec4 cloud_sky_horizon : source_color = vec4(0.68, 0.82, 0.94, 1.0);
+// 云远景天空的太阳颜色；影响日出日落方向的色彩。
 uniform vec4 cloud_sky_sun_color : source_color = vec4(1.0, 0.97, 0.90, 1.0);
+// 云天空日间权重（0 至 1）；由太阳高度生成，影响昼夜颜色混合。
 uniform float cloud_sky_daylight = 1.0;
+// 云天空晨昏权重（0 至 1）；控制低太阳高度时的暖色区域。
 uniform float cloud_sky_twilight = 0.0;
+// 天空太阳可见权重（0 至 1）；控制云远景太阳周边亮色。
 uniform float cloud_sky_sun_visibility = 1.0;
 
 vec3 cloud_sky_background(vec3 direction, vec3 position, vec3 direction_to_sun, int style) {

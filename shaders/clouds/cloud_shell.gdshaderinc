@@ -1,8 +1,15 @@
+// 计算星球及云层球壳的交点、遮挡和高度。
+// 固定世界空间球心并使用稳定求根，避免远距离精度损失和相机移动引起的云层漂移。
+
 // 固定的北极切平面原点；球心 = surface_origin - (0, radius, 0)。
 // 不随相机移动，以免云图、阴影与地平线游移。
+// 星球北极切平面的世界基点（米）；球心位于此点下方一个半径，固定该点可避免云随相机漂移。
 uniform vec3 planet_surface_origin = vec3(0.0);
+// 星球半径（米）；影响云层曲率、地平线和星球遮挡，不改变地图几何。
 uniform float planet_radius = 6371000.0;
+// 云层底部相对星球表面的高度（米）；应小于顶部高度，影响可进入云层的位置。
 uniform float cloud_bottom = 1500.0;
+// 云层顶部相对星球表面的高度（米）；应大于底部高度，增厚后光程和云体积随之增加。
 uniform float cloud_top = 4000.0;
 
 vec3 cloud_radial_vector(vec3 position) {

@@ -1,3 +1,6 @@
+## 组织游戏场景中的本地玩家、远程角色与界面。
+## 根据会话创建和移除角色，同步远程状态，并把可暂停的游戏时间传给水面材质。
+
 extends Node3D
 
 const PLAYER_SCENE := preload("res://scenes/player/玩家.tscn")

@@ -1,3 +1,6 @@
+## 管理游戏内生命条、小地图、帧率及相机模式显示。
+## 连接聊天和菜单输入状态，小地图跟随本地玩家，并发出自由相机切换请求。
+
 extends CanvasLayer
 
 signal free_camera_toggle_requested
@@ -9,6 +12,7 @@ const COMPASS_DIRECTIONS := {
 	"W": Vector2.LEFT, "E": Vector2.RIGHT,
 }
 
+## 小地图目标摄像机相对界面的节点路径；主场景设置为本地玩家顶视摄像机，留空或路径无效时跳过跟随。
 @export var target_camera_path: NodePath
 
 @onready var map_viewport: SubViewport = $小地图/SubViewport

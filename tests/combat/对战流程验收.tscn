@@ -1,0 +1,6 @@
+; 对战流程验收入口，挂载同名验收脚本。
+
+[gd_scene format=3]
+[ext_resource type="Script" path="res://tests/combat/对战流程验收.gd" id="1"]
+[node name="对战流程验收" type="Node3D"]
+script = ExtResource("1")

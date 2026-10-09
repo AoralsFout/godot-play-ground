@@ -1,9 +1,18 @@
+// 提供云的方向散射、银边、多重散射和入散射概率函数。
+// 太阳与月光复用相同模型，最终合成时分别应用颜色和能量。
+
 // Nubis PDF 75–93：方向散射、双指数衰减、入散射概率。
+// 增强散射模型开关；开启使用方向散射、银边、多重散射和入散射近似。
 uniform bool nubis_lighting = true;
+// 散射相函数偏心率；正值增强朝光源的前向散射，负值增强背向散射。
 uniform float phase_eccentricity : hint_range(-0.95, 0.95) = 0.6;
+// 云边银色高光强度；越大逆光银边越亮。
 uniform float silver_intensity : hint_range(0.0, 2.0) = 0.5;
+// 银边散射展宽参数；控制高光角分布，应结合散射偏心率和强度调节。
 uniform float silver_spread : hint_range(0.01, 0.98) = 0.2;
+// 多重散射补光强度；越大厚云内部越亮，朝光源方向会按角度减弱。
 uniform float multi_scatter_strength : hint_range(0.0, 1.0) = 1.0;
+// 入散射概率贡献；影响云内部和边缘的明暗塑形。
 uniform float in_scatter_strength : hint_range(0.0, 1.0) = 1.0;
 
 float cloud_henyey_greenstein(float cos_angle, float eccentricity) {

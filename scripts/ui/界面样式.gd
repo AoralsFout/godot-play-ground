@@ -1,3 +1,6 @@
+## 集中提供界面配色、字体和控件样式。
+## 主菜单、聊天、暂停菜单共享同一主题，中文字体使用系统字体回退。
+
 class_name UIStyle
 extends RefCounted
 

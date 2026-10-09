@@ -1,9 +1,12 @@
+; 史莱姆敌人预制场景，包含模型、碰撞、生命条及独立动画树。
+; 场景和资源参数由 Godot 编辑器维护，关联脚本说明可调属性的用途。
+
 [gd_scene format=3 uid="uid://srkc5nsc75yy"]
 
 [ext_resource type="Script" uid="uid://dtujgs6bij21l" path="res://scripts/combat/史莱姆.gd" id="1_slime"]
-[ext_resource type="PackedScene" uid="uid://dpp5oyyglyav3" path="res://assets/models/史莱姆.glb" id="2_model"]
+[ext_resource type="PackedScene" uid="uid://dpp5oyyglyav3" path="res://assets/models/enemies/史莱姆.glb" id="2_model"]
 
-[ext_resource type="AnimationNodeBlendTree" path="res://animations/史莱姆动画树.tres" id="3_tree"]
+[ext_resource type="AnimationNodeBlendTree" path="res://animations/enemies/史莱姆动画树.tres" id="3_tree"]
 
 [sub_resource type="SphereShape3D" id="Shape"]
 radius = 0.65

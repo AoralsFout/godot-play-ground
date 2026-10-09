@@ -1,3 +1,6 @@
+; 体积云沃利噪声源，提供云形组合与细节侵蚀数值。
+; 场景和资源参数由 Godot 编辑器维护，关联脚本说明可调属性的用途。
+
 [gd_resource type="NoiseTexture3D" format=3 uid="uid://cdkcsty88nnvk"]
 
 [sub_resource type="FastNoiseLite" id="Noise_worley"]

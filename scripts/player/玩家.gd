@@ -1,13 +1,23 @@
+## 驱动玩家移动、跳跃、持剑切换及第三人称和自由相机。
+## 本地角色处理输入与物理运动，远程角色插值同步状态；向动画树和战斗组件提供运动信息。
+
 extends CharacterBody3D
 
 signal free_camera_changed(enabled: bool)
 
+## 常规移动速度（米/秒）；提高后走动或追击更快，应为非负值。
 @export var move_speed: float = 6.0
+## 奔跑目标速度（米/秒）；按住奔跑键时生效，应不小于行走速度。
 @export var run_speed: float = 12.0
+## 水平速度变化率（米/秒²）；越大起步和停止越快，0 会使水平速度无法主动改变。
 @export var acceleration: float = 24.0
+## 起跳竖直速度（米/秒）；越大跳得越高，实际高度还受项目重力影响。
 @export var jump_speed: float = 5.0
+## 鼠标转向灵敏度（弧度/像素）；同时影响第三人称和自由相机，越大转向越快。
 @export var mouse_sensitivity: float = 0.0025
+## 自由相机基础飞行速度（米/秒）；影响前后、侧向及升降，不改变玩家位置。
 @export var free_camera_speed: float = 100.0
+## 自由相机按住 Shift 时的速度倍率；1 表示不加速，建议大于等于 1。
 @export var free_camera_boost: float = 4.0
 
 var free_camera_enabled := false

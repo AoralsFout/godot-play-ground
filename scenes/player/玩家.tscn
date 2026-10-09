@@ -1,13 +1,16 @@
+; 玩家预制场景，组合移动、相机、模型动画、地图指示器和战斗组件。
+; 场景和资源参数由 Godot 编辑器维护，关联脚本说明可调属性的用途。
+
 [gd_scene format=3 uid="uid://mr4ldj2e8x5j"]
 
 [ext_resource type="Script" uid="uid://cnmvxws567hts" path="res://scripts/player/玩家.gd" id="1_iy2xn"]
 [ext_resource type="Texture2D" uid="uid://br6jc52hcb7sc" path="res://assets/ui/玩家箭头.svg" id="2_arrow"]
-[ext_resource type="PackedScene" uid="uid://2mco7em7kna4" path="res://assets/models/model.glb" id="3_5fc0o"]
+[ext_resource type="PackedScene" uid="uid://2mco7em7kna4" path="res://assets/models/player/model.glb" id="3_5fc0o"]
 [ext_resource type="Script" uid="uid://bh6pgd2ad8g6y" path="res://scripts/player/玩家动画状态机.gd" id="4_7tyt6"]
 
 [ext_resource type="Script" path="res://scripts/combat/玩家战斗.gd" id="5_combat"]
 
-[ext_resource type="AnimationNodeBlendTree" path="res://animations/玩家动画树.tres" id="6_tree"]
+[ext_resource type="AnimationNodeBlendTree" path="res://animations/player/玩家动画树.tres" id="6_tree"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_76r4o"]
 height = 2.2154846

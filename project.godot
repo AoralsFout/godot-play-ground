@@ -1,17 +1,12 @@
-; Engine configuration file.
-; It's best edited using the editor UI and not directly,
-; since the parameters that go here are not all obvious.
-;
-; Format:
-;   [section] ; section goes between []
-;   param=value ; assign values to parameters
+; PlayGround 项目配置：设置运行入口、自动加载会话、窗口、输入和渲染后端。
+; 建议通过 Godot 编辑器维护；分节格式为 [分组]，配置项格式为 参数=值。
 
 config_version=5
 
 [application]
 
 config/name="PlayGround"
-run/main_scene="res://scenes/主菜单.tscn"
+run/main_scene="res://scenes/ui/主菜单.tscn"
 config/features=PackedStringArray("4.7", "Forward Plus")
 config/icon="res://assets/ui/icon.svg"
 

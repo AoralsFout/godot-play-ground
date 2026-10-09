@@ -1,18 +1,17 @@
+; 当前第二版地图，以原版第二版模型叠加桥梁路网及整平地形。
+; 场景和资源参数由 Godot 编辑器维护，关联脚本说明可调属性的用途。
+
 [gd_scene format=3 uid="uid://dqy28maxtd88x"]
 
-[ext_resource type="PackedScene" uid="uid://b8gagwih2i51l" path="res://assets/models/超大地形.glb" id="1_terrain"]
-[ext_resource type="Material" uid="uid://d35kwdlj51b6v" path="res://materials/地形海拔材质.tres" id="2_elevation"]
+[ext_resource type="Material" uid="uid://d35kwdlj51b6v" path="res://materials/terrain/地形海拔材质.tres" id="2_elevation"]
 [ext_resource type="Script" uid="uid://s3tdnuqhc40n" path="res://scripts/world/地形场景.gd" id="3_terrain"]
-[ext_resource type="PackedScene" uid="uid://b3xewgmghgdn7" path="res://assets/models/超大地形v2.glb" id="4_30ujk"]
+[ext_resource type="PackedScene" uid="uid://b3xewgmghgdn7" path="res://assets/models/terrain/超大地形v2.glb" id="4_30ujk"]
 
-[ext_resource type="PackedScene" path="res://assets/models/超大地形v2_路网桥梁.glb" id="5_roads"]
+[ext_resource type="PackedScene" path="res://assets/models/terrain/超大地形v2_路网桥梁.glb" id="5_roads"]
 
 [node name="地图" type="Node3D" unique_id=722592549]
 script = ExtResource("3_terrain")
 terrain_material = ExtResource("2_elevation")
-
-[node name="超大地形" parent="." unique_id=1015245017 instance=ExtResource("1_terrain")]
-visible = false
 
 [node name="超大地形v2" parent="." unique_id=1061065850 instance=ExtResource("4_30ujk")]
 

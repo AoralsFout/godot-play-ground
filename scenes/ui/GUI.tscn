@@ -1,3 +1,6 @@
+; 游戏界面场景，包含生命条、小地图视口及状态文本。
+; 场景和资源参数由 Godot 编辑器维护，关联脚本说明可调属性的用途。
+
 [gd_scene format=3 uid="uid://btx846cll5nt"]
 
 [ext_resource type="Script" uid="uid://54jxyu0u11hg" path="res://scripts/ui/GUI.gd" id="1_gui"]

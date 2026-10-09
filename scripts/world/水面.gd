@@ -1,3 +1,6 @@
+## 生成围绕摄像机展开的环形海面与远景外圈。
+## 同步波浪、无限覆盖、水下效果和镜像倒影视口；几何网格复用以控制运行开销。
+
 @tool
 extends MeshInstance3D
 ## 以摄像机为中心的环形水面。几何体只构建一次，外圈可随相机延伸至视距之外。
@@ -13,7 +16,9 @@ const RINGS := [
 	Vector3(128.0, 2.0, 64.0),
 ]
 
+## 真实海面使用的着色器材质；接收波浪时间、距离分级、倒影和天空光照参数。
 @export var water_material: ShaderMaterial
+## 无限海面开关；开启后网格跟随当前摄像机并扩展至视距之外，关闭后使用固定尺寸。
 @export var infinite_ocean := true:
 	set(value):
 		infinite_ocean = value
@@ -21,6 +26,7 @@ const RINGS := [
 			_last_center = Vector2(INF, INF)
 			_update_center()
 # 无限模式下是最小覆盖尺寸；实际范围同时覆盖相机视锥。
+## 海面 X/Z 最小覆盖尺寸（米）；固定模式限制边界，无限模式还会按摄像机视锥扩展。
 @export var water_size := WATER_SIZE:
 	set(value):
 		water_size = value.max(Vector2(512.0, 512.0))
@@ -31,9 +37,13 @@ const RINGS := [
 			_update_bounds()
 			_last_center = Vector2(INF, INF)
 			_update_center()
+## 水下视觉效果开关；根据摄像机相对动态波面的浸水程度启用水下叠色与雾。
 @export var underwater_enabled := true
+## 水下雾密度；越大远景越快被雾遮住，不改变水面波浪。
 @export_range(0.0, 0.3, 0.005) var underwater_fog_density := 0.065
+## 平面倒影开关；开启后创建镜像视口并渲染场景，关闭可降低渲染开销。
 @export var reflections_enabled := true
+## 平面倒影视口相对主视口的分辨率倍率；越大越清晰，同时增加显卡成本。
 @export_range(0.25, 1.0, 0.05) var reflection_resolution_scale := 0.5
 
 const WATER_LAYER := 524288 # 第 20 层：让倒影摄像机排除海面。

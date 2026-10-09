@@ -1,35 +1,59 @@
+// 以世界海拔、坡度及三维噪声着色地形。
+// 区分海床、沙滩、土壤、岩石和高地，并叠加细节法线及太阳云影。
+
 shader_type spatial;
 #include "res://shaders/clouds/cloud_ground_shadow.gdshaderinc"
 render_mode diffuse_burley, specular_schlick_ggx;
 
 group_uniforms Coast;
 // 世界坐标采样保证分块接缝连续，sea_level 由场景同步实际水位。
+// 世界海平面 Y 坐标（米）；由地图同步实际水位，决定海床和岸线的位置。
 uniform float sea_level = 15.0;
+// 沙滩向土壤过渡的起始相对海拔（米）；提高后沙滩向高处延伸。
 uniform float beach_start : hint_range(0.0, 30.0) = 3.0;
+// 沙滩向土壤过渡的结束相对海拔（米）；应大于起始值，间隔越大过渡越宽。
 uniform float beach_end : hint_range(1.0, 60.0) = 18.0;
+// 湿沙带高度尺度（米）；越大水线附近的深色湿润区域越宽。
 uniform float wet_band : hint_range(0.1, 8.0) = 2.0;
+// 岸线噪声高度扰动幅度（米）；增大后沙滩边界更不规则。
 uniform float shore_variation : hint_range(0.0, 6.0) = 1.6;
 
 group_uniforms Rock;
+// 开始显示岩石的坡度角（度）；降低后较缓坡也显示岩石。
 uniform float rock_start_degrees : hint_range(0.0, 85.0) = 27.0;
+// 完全显示岩石的坡度角（度）；应大于起始角，控制土岩过渡宽度。
 uniform float rock_full_degrees : hint_range(1.0, 89.0) = 52.0;
+// 开始高地配色的相对海平面高度（米）；应小于高地结束高度，另叠加大型噪声扰动。
 uniform float highland_start : hint_range(50.0, 1200.0) = 260.0;
+// 完全使用高地配色的相对海平面高度（米）；决定山顶浅色区域的过渡终点。
 uniform float highland_end : hint_range(60.0, 1500.0) = 680.0;
+// 岩层纹理竖直间距（米）；越大岩层条带越稀疏。
 uniform float strata_spacing : hint_range(1.0, 40.0) = 12.0;
+// 岩层色彩变化强度；0 隐藏条带，增大会增强层理对比。
 uniform float strata_strength : hint_range(0.0, 0.25) = 0.07;
 
 group_uniforms Palette;
+// 海平面以下地表颜色；影响海床和浅水折射中可见的地面。
 uniform vec4 seabed_color : source_color = vec4(0.36, 0.38, 0.36, 1.0);
+// 岸边沙滩颜色；与湿沙、土壤按相对水位混合。
 uniform vec4 sand_color : source_color = vec4(0.68, 0.60, 0.44, 1.0);
+// 低坡普通地表颜色；作为土壤区域的基础配色。
 uniform vec4 soil_color : source_color = vec4(0.49, 0.43, 0.34, 1.0);
+// 陡坡岩石颜色；按坡度权重与土壤、高地混合。
 uniform vec4 rock_color : source_color = vec4(0.40, 0.42, 0.44, 1.0);
+// 高海拔地表颜色；达到高地结束海拔后完整应用。
 uniform vec4 highland_color : source_color = vec4(0.58, 0.57, 0.53, 1.0);
 
 group_uniforms Detail;
+// 大尺度地表噪声的空间频率（每米）；越大色块尺度越小。
 uniform float macro_scale : hint_range(0.001, 0.05, 0.001) = 0.006;
+// 中尺度地表噪声的空间频率（每米）；越大明暗细节越细。
 uniform float detail_scale : hint_range(0.02, 1.0, 0.01) = 0.12;
+// 细颗粒噪声的空间频率（每米）；越大颗粒更细，远景按像素足迹衰减。
 uniform float grain_scale : hint_range(0.1, 10.0, 0.1) = 2.4;
+// 地表噪声明暗变化强度；越大表面颜色对比越明显。
 uniform float detail_strength : hint_range(0.0, 0.4) = 0.16;
+// 细节法线扰动强度；增大会增强地面凹凸观感，不改变几何和碰撞。
 uniform float bump_strength : hint_range(0.0, 0.5) = 0.12;
 group_uniforms;
 

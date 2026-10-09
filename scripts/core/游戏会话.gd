@@ -1,3 +1,6 @@
+## 自动加载的会话管理器，跨场景保存连接与房间状态。
+## 负责主机和客户端连接、玩家名单、聊天及移动状态同步，统一管理界面输入阻塞。
+
 extends Node
 ## 独立管理连接，不受场景切换影响。仅由主机发布房间数据。
 
@@ -6,8 +9,8 @@ signal chat_received(entry: Dictionary)
 signal connection_status_changed(message: String)
 signal player_state_received(peer_id: int, state: Dictionary)
 
-const MAIN_MENU := "res://scenes/主菜单.tscn"
-const GAME_SCENE := "res://scenes/根节点.tscn"
+const MAIN_MENU := "res://scenes/ui/主菜单.tscn"
+const GAME_SCENE := "res://scenes/core/根节点.tscn"
 const MAX_PLAYERS := 16
 const MAX_HISTORY := 100
 const CONNECT_TIMEOUT := 10.0

@@ -1,34 +1,43 @@
+## 根据日月方向连续更新天空、环境补光和海面光照。
+## 支持太阳自动轮转、晨昏色彩及独立月亮，并在编辑器中实时预览。
+
 @tool
 extends WorldEnvironment
 ## 太阳角度驱动连续昼夜色彩，独立月光照亮夜空和海面。
 
-const CLEAR_SKY := preload("res://materials/晴空.tres")
+const CLEAR_SKY := preload("res://materials/sky/晴空.tres")
 
 @export_group("天空 · 太阳与昼夜")
 ## 直接旋转这个日光节点即可改变天空，编辑器静止预览也会更新。
+## 日光节点相对世界环境的路径；旋转该方向光会更新天空、云和海面昼夜状态。
 @export_node_path("DirectionalLight3D") var sun_path := NodePath("../日光"):
 	set(value):
 		sun_path = value
 		_sun = null
 		_apply_settings()
 ## 自动以太阳水平朝向区分早晚；相同高度也可手动指定日出或日落风格。
+## 晨昏配色选择；0 按太阳方位自动区分，1 固定日出，2 固定日落，不改变太阳运动。
 @export_enum("自动方位", "日出", "日落") var twilight_style := 0:
 	set(value):
 		twilight_style = value
 		_apply_settings()
 ## 太阳落下的一侧，0° 为 +Z，180° 为 -Z。
+## 日落侧的水平方位角（度）；0 指向 +Z，180 指向 -Z，影响自动晨昏风格。
 @export_range(-180.0, 180.0, 1.0) var sunset_azimuth := 180.0:
 	set(value):
 		sunset_azimuth = value
 		_apply_settings()
+## 日间太阳直射能量倍率；越大地表和海面越亮，随太阳高度平滑衰减。
 @export_range(0.0, 4.0, 0.05) var daylight_energy := 1.15:
 	set(value):
 		daylight_energy = value
 		_apply_settings()
+## 日间环境补光能量；增加可提亮阴影区域，不改变太阳直射方向。
 @export_range(0.0, 2.0, 0.01) var daylight_ambient_energy := 0.65:
 	set(value):
 		daylight_ambient_energy = value
 		_apply_settings()
+## 夜间最低环境补光能量；决定无月光处的可见程度，过高会削弱昼夜对比。
 @export_range(0.0, 0.2, 0.005) var night_ambient_energy := 0.035:
 	set(value):
 		night_ambient_energy = value
@@ -36,39 +45,48 @@ const CLEAR_SKY := preload("res://materials/晴空.tres")
 
 @export_group("天空 · 太阳自动轮转")
 ## 从日光节点当前角度开始轮转；关闭后停留在当前角度，可继续手动调节。
+## 太阳自动轮转开关；从当前姿态推进，关闭时停在当前角度，游戏暂停时停止。
 @export var sun_auto_rotate := false
 ## 每秒旋转的度数。负值反向，0 暂停；1 度/秒对应 6 分钟一圈。
+## 太阳角速度（度/秒）；负值反向，0 暂停，1 对应每 6 分钟一圈。
 @export_range(-360.0, 360.0, 0.1) var sun_rotation_speed := 1.0:
 	set(value):
 		sun_rotation_speed = clampf(value, -360.0, 360.0)
 ## X 改变太阳高度形成昼夜循环，Y 改变水平朝向。
+## 太阳旋转轴；0 沿 X 改变高度形成昼夜，1 沿 Y 改变水平朝向。
 @export_enum("X（昼夜）", "Y（方位）") var sun_rotation_axis := 0:
 	set(value):
 		sun_rotation_axis = clampi(value, 0, 1)
 ## 在编辑器中也推进轮转。只想在游戏里轮转时关闭此项。
+## 是否在编辑器推进自动轮转；运行时仍由自动轮转主开关和暂停状态控制。
 @export var sun_rotation_editor_preview := true
 
 @export_group("天空 · 独立月亮")
 ## 使用独立的方向光控制月亮。旋转月光节点，X/Y 分别改变高度和方位。
+## 独立月光节点相对世界环境的路径；旋转其方向可调月亮高度和方位。
 @export_node_path("DirectionalLight3D") var moon_path := NodePath("../月光"):
 	set(value):
 		moon_path = value
 		_moon = null
 		_apply_settings()
+## 月亮及月光开关；影响天空月盘、夜间直射和同步给云的月光状态。
 @export var moon_enabled := true:
 	set(value):
 		moon_enabled = value
 		_apply_settings()
 ## 夜间最大直射光强度，随月亮高度调节照明。
+## 月亮位于高处时的最大直射能量；随月亮高度及昼夜权重变化。
 @export_range(0.0, 1.0, 0.01) var moonlight_energy := 0.25:
 	set(value):
 		moonlight_energy = value
 		_apply_settings()
+## 月光颜色；同时影响月盘、地面、海面及体积云接收的月光。
 @export var moonlight_color := Color(0.76, 0.84, 1.0):
 	set(value):
 		moonlight_color = value
 		_apply_settings()
 ## 天空中的月亮直径，单位为度。
+## 天空月亮的完整角直径（度）；改变月盘大小，不改变月光覆盖范围。
 @export_range(0.2, 4.0, 0.05) var moon_angular_size := 1.2:
 	set(value):
 		moon_angular_size = value

@@ -1,3 +1,6 @@
+## 构建主菜单以及创建和加入房间的表单。
+## 保存昵称、地址和端口草稿，调用会话管理器并显示连接状态。
+
 extends Control
 
 var content: VBoxContainer

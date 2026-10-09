@@ -1,3 +1,6 @@
+## 管理体积云计算合成器的管线、纹理和渲染回调。
+## 主线程提交资源快照，渲染线程执行云、光束与最终合成，并在退出时释放显卡资源。
+
 extends CompositorEffect
 
 signal failed(message: String)

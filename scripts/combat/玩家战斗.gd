@@ -1,3 +1,6 @@
+## 管理玩家点按、蓄力、挥剑和伤害结算。
+## 锁定释放方向，在动画命中事件中检查扇形、距离和遮挡，并协调镜头、输入取消及生命信号。
+
 extends Node3D
 
 signal health_changed(current: int, maximum: int)
@@ -7,19 +10,31 @@ const SECTOR := preload("res://scripts/combat/攻击扇形.gd")
 enum Phase { IDLE, PRESSING, CHARGING, SWINGING }
 
 @export_group("生命")
+## 初始生命上限（点）；决定受伤可承受量和血条比例，必须大于 0。
 @export var max_health: int = 100
 @export_group("攻击")
+## 点按或低蓄力攻击的基础伤害（点）；与最大伤害共同确定蓄力插值。
 @export var base_damage: int = 20
+## 完全蓄力时的伤害上限（点）；继续长按不再增加，建议不小于基础伤害。
 @export var max_damage: int = 70
+## 长按转入蓄力的阈值（秒）；短于此时间释放按点按处理，越大越容易触发普通攻击。
 @export_range(0.05, 0.5, 0.01) var hold_threshold: float = 0.18
+## 进入蓄力后达到满伤害的时间（秒）；提高后蓄力更慢，保持阶段不会继续突破上限。
 @export_range(0.2, 5.0, 0.05) var max_charge_seconds: float = 1.8
+## 点按攻击扇形半径（米）；影响实际命中范围，普通攻击不显示该扇形。
 @export var quick_radius: float = 2.8
+## 点按攻击扇形的完整夹角（度）；越大横向覆盖越宽，判定使用半角。
 @export var quick_angle_degrees: float = 110.0
+## 蓄力攻击扇形半径（米）；同时用于贴地提示、目标选中和释放后的命中检查。
 @export var charged_radius: float = 5.0
+## 蓄力攻击扇形的完整夹角（度）；同时影响提示与命中，越小越需要精确瞄准。
 @export var charged_angle_degrees: float = 34.0
 @export_group("蓄力镜头")
+## 蓄力时伸缩臂目标长度（米）；越小镜头越靠近角色，攻击取消或结束后恢复原长度。
 @export var charge_camera_distance: float = 3.1
+## 蓄力时摄像机视野角（度）；越小画面放大越明显，结束后恢复原视野。
 @export var charge_camera_fov: float = 58.0
+## 蓄力时摄像机水平偏移（米）；正值向右移镜头，结束后恢复原偏移。
 @export var charge_camera_offset: float = 0.65
 
 var health: int

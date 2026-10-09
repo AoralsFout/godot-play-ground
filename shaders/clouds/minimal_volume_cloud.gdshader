@@ -1,9 +1,13 @@
+// 渲染编辑器及后处理关闭时的基础体积云预览。
+// 与计算合成共用密度、步进及光照函数，以场景深度截断云层，不生成计算光束。
+
 shader_type spatial;
 render_mode unshaded, fog_disabled, cull_disabled, depth_draw_never, depth_test_disabled;
 
 #include "res://shaders/clouds/cloud_raymarch.gdshaderinc"
 #include "res://shaders/clouds/cloud_atmosphere.gdshaderinc"
 
+// 当前视口深度纹理；还原场景距离以阻止云穿过前景几何，由渲染器提供。
 uniform sampler2D scene_depth : hint_depth_texture, repeat_disable, filter_nearest;
 
 void vertex() {

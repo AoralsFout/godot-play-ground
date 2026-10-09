@@ -1,3 +1,6 @@
+// 解析计算世界坐标海浪高度及水平导数。
+// 水面几何、法线和浸水查询共用波形，移动海面网格时保持波纹连续。
+
 // 解析计算涌浪高度及其导数；浸水查询使用相同的计算逻辑。
 vec3 swell(vec2 p, vec2 direction, float k, float amplitude, float phase, float time) {
  float angle = dot(p, direction) * k - sqrt(9.81 * k) * time + phase;

@@ -1,3 +1,6 @@
+// 按层云、层积云和积云权重计算高度密度剖面。
+// 四个归一化高度端点依次表示增密开始、增密结束、消散开始和消散结束。
+
 // 按云类型插值四个高度端点：开始增密、完全增密、开始消散、完全消散。
 // 三个权重在 [0, 1] 内总和为 1，类型 0.5 两侧的端点值连续。
 vec4 cloud_height_profile(float cloud_type, vec4 stratus, vec4 stratocumulus, vec4 cumulus) {

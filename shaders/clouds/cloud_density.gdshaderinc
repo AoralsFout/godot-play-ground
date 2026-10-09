@@ -1,28 +1,48 @@
+// 组合云图覆盖度、类型、高度剖面和三维噪声，查询世界坐标云密度。
+// 主视图、倒影、云内光照与地面云影复用此密度函数。
+
 #include "res://shaders/clouds/cloud_shell.gdshaderinc"
 #include "res://shaders/clouds/cloud_height_gradient.gdshaderinc"
 #include "res://shaders/clouds/cloud_noise_3d.gdshaderinc"
 
 // RGB 是覆盖度/类型数据，不添加 source_color，保留通道的数值。
+// 云覆盖和类型数据纹理；红绿通道参与覆盖，蓝通道影响类型，应使用数值纹理而非颜色贴图。
 uniform sampler2D cloud_map : hint_default_black, repeat_disable, filter_linear;
 // 北半球局部云图，沿径向投到星球表面再取 XZ；区域之外不重复纹理。
+// 云图中心的世界 X/Z 坐标（米）；改变大型云形覆盖区域。
 uniform vec2 cloud_map_center = vec2(0.0);
+// 云图覆盖的边长（米）；越大同一图案越宽，边缘之外不重复采样。
 uniform float cloud_map_extent = 600000.0;
+// 红绿覆盖通道的混合比例；0 使用红通道，1 使用绿通道，影响大型云形分布。
 uniform float coverage_blend : hint_range(0.0, 1.0) = 0.5;
 // 0 清空，0.5 使用原云图，1 将 R/G 覆盖度推到最大。
+// 整体云量；0 清空，0.5 保留原图，1 最大化红绿覆盖，云图范围外仍保持无云。
 uniform float coverage_amount : hint_range(0.0, 1.0) = 0.5;
+// 云类型偏置；改变高度剖面的类型混合，不平移云图或噪声。
 uniform float cloud_type_bias : hint_range(-1.0, 1.0) = 0.0;
+// 云密度倍率；越大云越厚重，0 不产生密度。
 uniform float density_multiplier : hint_range(0.0, 10.0) = 1.0;
 // PDF 45 的固定大型 / 动态细节目标：时间位移仅用于高频和侵蚀。
+// 动态噪声世界位移（米）；由控制器按风速与可暂停时间累积，仅作用于动态细节。
 uniform vec3 noise_motion_offset = vec3(0.0);
+// 世界空间水平风向单位向量；决定随高度的云形偏移方向。
 uniform vec3 wind_direction = vec3(1.0, 0.0, 0.0);
+// 从云底到云顶的风向偏移幅度（米）；底部为 0，高处逐渐增大。
 uniform float wind_height_skew : hint_range(0.0, 1500.0) = 500.0;
+// 砧状云偏置强度；越大顶部扩张和偏移越明显。
 uniform float anvil_bias : hint_range(0.0, 1.0) = 0.0;
 // 顶部额外的风向变化，与整层风的时间位移分开。
+// 砧状云顶部偏移的世界方向单位向量；配合顶部偏移距离使用。
 uniform vec3 anvil_skew_direction = vec3(0.70710678, 0.0, -0.70710678);
+// 砧状云顶部额外偏移距离（米）；影响高层形状，不等同于随时间位移。
 uniform float anvil_skew_distance : hint_range(0.0, 3000.0) = 1000.0;
+// 层云四端点高度剖面（0 至 1）；依次为增密开始、增密结束、消散开始和消散结束，应递增。
 uniform vec4 stratus_profile = vec4(0.0, 0.1, 0.2, 0.3);
+// 层积云四端点高度剖面（0 至 1）；决定密度在云底和云顶的过渡，端点应递增。
 uniform vec4 stratocumulus_profile = vec4(0.0, 0.2, 0.48, 0.625);
+// 积云四端点高度剖面（0 至 1）；决定较厚积云的竖直密度分布，端点应递增。
 uniform vec4 cumulus_profile = vec4(0.0, 0.1625, 0.88, 0.98);
+// 云消光系数（每米）；越大透光越少，需结合密度与云层厚度调节。
 uniform float extinction : hint_range(0.0, 0.02) = 0.00192;
 
 float cloud_shape_density(float base_noise, float height_density, float coverage, float erosion_threshold) {

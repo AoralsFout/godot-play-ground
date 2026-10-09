@@ -1,28 +1,51 @@
+// 在球壳有效区间内步进云密度，累计透射率、深度及日月光照。
+// 支持空域加速与低频光照查询，供基础预览和计算合成共用。
+
 #include "res://shaders/clouds/cloud_density.gdshaderinc"
 #include "res://shaders/clouds/cloud_lighting.gdshaderinc"
 #include "res://shaders/clouds/cloud_sky_color.gdshaderinc"
 
+// 视线步进最大次数；越大细节越稳定且显卡成本越高，实际预算还会按方向和空域调整。
 uniform int march_steps : hint_range(16, 192) = 96;
+// 云视线的最远积分距离（米）；影响远景范围，也受场景深度截断。
 uniform float max_distance = 300000.0;
+// 开始降低高频云细节的距离尺度（米）；增大保留更多远景细节并增加噪声采样成本。
 uniform float detail_distance = 80000.0;
+// 云层远景大气融合强度；越大远云越接近天空雾色。
 uniform float haze_strength : hint_range(0.0, 1.0) = 0.75;
+// 天空风格兼容参数；传入的风格值目前不参与配色，实际使用控制器同步的昼夜色盘。
 uniform int sky_style = 0;
+// 独立天空光照联动开关；开启后按太阳高度额外调整光色、地平线直射和环境补光，本项目控制器已同步昼夜故关闭。
 uniform bool sky_link_lighting = true;
+// 云体基础颜色；最终乘日月直射与环境补光，影响整层云的色调。
 uniform vec4 cloud_color : source_color = vec4(0.95, 0.97, 1.0, 1.0);
 // 世界空间中从采样点指向太阳的单位方向，不是光传播方向。
+// 从世界采样点指向太阳的单位方向；影响散射、自阴影和星球遮挡。
 uniform vec3 sun_direction = vec3(-0.57922797, 0.57357644, 0.57922797);
+// 太阳直射颜色；由天空同步，最终与云光强相乘。
 uniform vec4 sun_color : source_color = vec4(1.0, 0.95, 0.88, 1.0);
+// 云接收的太阳直射强度；0 停止太阳光照密度查询。
 uniform float sun_intensity : hint_range(0.0, 5.0) = 1.8;
+// 从世界采样点指向月亮的单位方向；影响夜间散射、自阴影和光束。
 uniform vec3 moon_direction = vec3(0.0, 1.0, 0.0);
+// 月光直射颜色；天空与云共用，影响夜间云受光色调。
 uniform vec4 moon_color : source_color = vec4(0.76, 0.84, 1.0, 1.0);
 // 控制器已应用夜间/地平线/开关权重；白天为零，不执行月光密度查询。
+// 云月光直射强度；控制器已乘昼夜、地平线及开关权重，白天为 0。
 uniform float moon_intensity : hint_range(0.0, 3.0) = 0.0;
+// 云内环境补光颜色；用于无直射区域，运行时还与天空环境状态协调。
 uniform vec4 ambient_color : source_color = vec4(0.65, 0.75, 1.0, 1.0);
+// 云内环境补光强度；越大背光区域越亮，降低明暗对比。
 uniform float ambient_intensity : hint_range(0.0, 1.0) = 0.25;
+// 云内自阴影开关；开启沿光源方向查询透射率，增加立体感及采样成本。
 uniform bool self_shadow = true;
+// 每次光照查询的采样预算；越大自阴影更稳定，太阳和月光使用同一预算。
 uniform int light_steps : hint_range(1, 16) = 6;
+// 自适应步进开关；按空域和观察方向减少无效采样，以降低显卡成本。
 uniform bool adaptive_sampling = true;
+// 光照使用低频密度近似的开关；减少侵蚀查询以降低自阴影成本。
 uniform bool light_low_frequency = true;
+// 空域步长相对基础步长的倍率；越大空域遍历更快，但细小云团更容易漏采样。
 uniform int empty_step_scale : hint_range(1, 4) = 3;
 
 // imp.md 的固定六向量核；增加 Light Steps 时循环使用，保持世界空间稳定。

@@ -1,3 +1,6 @@
+; 世界场景，组合地图、日月光、天空控制器、体积云及真实海面。
+; 场景和资源参数由 Godot 编辑器维护，关联脚本说明可调属性的用途。
+
 [gd_scene format=4 uid="uid://m0upkn44xwpi"]
 
 [ext_resource type="Shader" uid="uid://b88lb8blojt03" path="res://shaders/sky/晴空.gdshader" id="1_vob5h"]

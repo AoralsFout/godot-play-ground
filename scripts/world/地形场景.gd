@@ -1,12 +1,17 @@
+## 统一第二版地图材质、渲染层与导入碰撞。
+## 以路网整平地形替换原地表，为肋柱、道路和桥梁开启双面碰撞，并同步实际海平面。
+
 @tool
 extends Node3D
 ## 统一导入地形的材质及主视图、小地图渲染层。
 
+## 地图地表共用的着色器材质；统一应用到地形网格，并接收实际海平面高度。
 @export var terrain_material: ShaderMaterial:
 	set(value):
 		terrain_material = value
 		if is_node_ready():
 			_apply_terrain()
+## 水面节点相对地图的路径；其世界 Y 坐标决定海拔分色，节点缺失时回退到 15 米。
 @export_node_path("Node3D") var water_path := NodePath("../水面")
 
 var _sea_level := INF
@@ -17,20 +22,7 @@ func _ready() -> void:
 	_sync_sea_level()
 
 
-#func _apply_terrain() -> void:
-	#var terrain := get_node_or_null("超大地形")
-	#if terrain == null:
-		#return
-	#for node in terrain.find_children("*", "MeshInstance3D", true, false):
-		#var instance := node as MeshInstance3D
-		#instance.layers = 3
-		#instance.gi_mode = GeometryInstance3D.GI_MODE_DISABLED
-		#if str(instance.name).begins_with("地形块_"):
-			#instance.material_override = terrain_material
-	#_sea_level = INF
-
 func _apply_terrain() -> void:
-	_disable_hidden_terrain_collision()
 	var terrain := get_node_or_null("超大地形v2")
 	if terrain == null:
 		return

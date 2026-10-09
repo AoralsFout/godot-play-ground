@@ -1,9 +1,17 @@
+// 沿太阳方向积分云密度，衰减地形和水面的太阳直射光。
+// 小地图跳过采样，月光、点光与环境补光保留。
+
 #include "res://shaders/clouds/cloud_density.gdshaderinc"
 
+// 地面太阳云影开关；影响地形和海面直射光，小地图跳过云影。
 uniform bool ground_cloud_shadows = false;
+// 地面太阳云影强度；0 不衰减直射光，1 使用完整云透射率。
 uniform float ground_shadow_strength = 1.0;
+// 地面云影密度采样次数；越大阴影更稳定，但增加每个地表片元的开销。
 uniform int ground_shadow_steps : hint_range(4, 32) = 12;
+// 地面云影查询指向太阳的世界单位向量；由体积云控制器同步。
 uniform vec3 cloud_ground_sun_direction = vec3(0.0, 1.0, 0.0);
+// 地面云影查询的太阳能量；0 时跳过云影查询，避免夜间无效成本。
 uniform float cloud_ground_sun_intensity = 0.0;
 
 float ground_sun_transmittance(vec3 world_position, vec3 direction_to_sun) {

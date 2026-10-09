@@ -1,3 +1,6 @@
+## 组织玩家动画树中的移动、装备和上半身战斗层。
+## 为每个实例生成保持及挥剑事件动画，按实际速度调整步频并发送命中、结束信号。
+
 class_name PlayerAnimationStateMachine
 extends Node3D
 
@@ -7,30 +10,51 @@ signal attack_finished
 
 enum State { IDLE, WALK, RUN, JUMP, FALLING, CHARGE, ATTACK }
 
+## 空手待机动画名；必须与导入动画库中的名称一致，决定静止时的姿势。
 @export var idle_animation: StringName = &"Idle"
+## 空手行走动画名；用于移动层的行走状态，按实际速度调整步频。
 @export var walk_animation: StringName = &"walk"
+## 空手奔跑动画名；用于移动层的奔跑状态，按实际速度调整步频。
 @export var run_animation: StringName = &"run"
+## 空手起跳动画名；上升阶段使用一次播放动作。
 @export var jump_animation: StringName = &"jump"
+## 空手下落动画名；下降或走出平台时循环播放。
 @export var falling_animation: StringName = &"falling"
 @export_group("持剑动画")
+## 持剑待机动画名；装备切换时与空手待机平滑混合。
 @export var sword_idle_animation: StringName = &"Idle-with-sword"
+## 持剑行走动画名；影响持剑移动姿势和步频。
 @export var sword_walk_animation: StringName = &"walk-with-sword"
+## 持剑奔跑动画名；影响持剑奔跑姿势和步频。
 @export var sword_run_animation: StringName = &"run-with-sword"
+## 持剑起跳动画名；装备切换和上升阶段使用该动作。
 @export var sword_jump_animation: StringName = &"jump-with-sword"
+## 持剑下落动画名；在下降阶段循环，装备状态同时控制剑显隐。
 @export var sword_falling_animation: StringName = &"falling-with-sword"
+## 剑网格相对模型节点的路径；用于装备显隐，应指向有效的几何实例节点。
 @export_node_path("GeometryInstance3D") var sword_mesh_path: NodePath = ^"骨架/Skeleton3D/骨骼_023/立方体_001"
 @export_group("战斗动画")
+## 蓄力准备动画名；其末帧提取为保持动作，避免长按重复抬剑。
 @export var charge_animation: StringName = &"attack-ready"
+## 挥剑动画名；复制后加入命中和结束方法轨道，原导入动作保持独立。
 @export var attack_animation: StringName = &"attack-1"
+## 挥剑后的命中关键帧时间（秒）；该时刻发送一次伤害事件，应处于实际挥剑动作时长内。
 @export_range(0.01, 0.7, 0.01) var attack_impact_seconds: float = 0.30
 # 该骨架的躯干与双腿是独立分支；从第一节脊柱覆盖，保留移动的根部起伏。
+## 上半身过滤起始骨骼名；覆盖其子骨骼，必须避开腿部与根骨以保留移动动作。
 @export var upper_body_root_bone: StringName = &"骨骼.001"
+## 战斗层淡入淡出时长（秒）；越小响应越快，0 表示立即切换。
 @export_range(0.0, 1.0, 0.01) var combat_blend_time: float = 0.08
 @export_group("动画切换")
+## 移动和装备动作的混合时长（秒）；越大姿势切换越平缓。
 @export_range(0.0, 1.0, 0.01) var blend_time: float = 0.2
+## 进入行走状态的水平速度阈值（米/秒）；应高于停止阈值以减少低速抖动。
 @export var walk_start_speed: float = 0.1
+## 退出行走状态的水平速度阈值（米/秒）；应低于启动阈值。
 @export var walk_stop_speed: float = 0.05
+## 模型朝向插值速率（每秒）；越大越快朝移动或攻击方向转身，0 表示不推进转向。
 @export_range(0.0, 30.0, 0.1) var turn_speed: float = 12.0
+## 模型正前方的偏航校正角（度）；补偿导入模型朝向，不改变摄像机朝向。
 @export_range(-180.0, 180.0, 1.0) var forward_yaw_offset_degrees: float = 180
 
 const MOTION_NODES: Array[StringName] = [&"Idle", &"Walk", &"Run", &"Jump", &"Falling"]

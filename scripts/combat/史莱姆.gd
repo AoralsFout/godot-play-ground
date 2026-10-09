@@ -1,14 +1,27 @@
+## 控制史莱姆追击、扑击、生命及死亡流程。
+## 通过动画树播放动作，维护头顶血条、受击变色、蓄力选中提示和尸体淡出。
+
 extends CharacterBody3D
 
+## 初始生命上限（点）；决定受伤可承受量和血条比例，必须大于 0。
 @export var max_health: int = 140
+## 常规移动速度（米/秒）；提高后走动或追击更快，应为非负值。
 @export var move_speed: float = 2.4
+## 每次成功扑击扣除的生命（点）；只在目标处于命中范围且无遮挡时结算。
 @export var attack_damage: int = 10
+## 启动扑击的水平距离（米）；同时参与命中距离判定，最终容差额外增加 0.35 米。
 @export var attack_range: float = 1.65
+## 扑击准备到命中结算的时间（秒）；影响攻击节奏及动作播放速度，应大于 0。
 @export var attack_windup: float = 0.42
+## 扑击结束后的冷却时间（秒）；越大再次攻击间隔越长。
 @export var attack_recovery: float = 0.85
+## 追击目标的最大水平距离（米）；超出后停止追击，目标选择仍从玩家组中寻找最近玩家。
 @export var aggro_range: float = 24.0
+## 死亡到开始淡出的停留时间（秒）；用于展示死亡动作，应为非负值。
 @export var corpse_wait: float = 1.2
+## 尸体从可见到完全透明的时间（秒）；结束后移除节点，内部最小按 0.01 秒计算。
 @export var fade_seconds: float = 1.3
+## 史莱姆被玩家攻击时的水平包围半径（米）；用于扇形边缘命中容差，不改变物理碰撞形状。
 @export var hit_radius: float = 0.65
 
 var health: int

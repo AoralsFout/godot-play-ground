@@ -112,10 +112,17 @@ func _run() -> void:
 	Input.action_press("玩家前移")
 	await wait(0.25)
 	var skeleton: Skeleton3D = player.player_model.find_children("*", "Skeleton3D", true, false)[0]
-	var leg := skeleton.find_bone(&"骨骼.016")
-	var leg_pose := skeleton.get_bone_pose(leg)
+	# 四向步态中单个膝骨可能短暂保持不动；比较整组腿骨以检查实际迈步。
+	var leg_bones: Array[StringName] = [&"骨骼.012", &"骨骼.014", &"骨骼.016", &"骨骼.018", &"骨骼.020",
+		&"骨骼.013", &"骨骼.015", &"骨骼.017", &"骨骼.019", &"骨骼.021"]
+	var leg_poses: Array[Transform3D] = []
+	for bone in leg_bones:
+		leg_poses.append(skeleton.get_bone_pose(skeleton.find_bone(bone)))
 	await wait(0.25)
-	check(not skeleton.get_bone_pose(leg).is_equal_approx(leg_pose), "真实蓄力移动时腿部继续迈步")
+	var legs_moving := false
+	for i in leg_bones.size():
+		legs_moving = legs_moving or not skeleton.get_bone_pose(skeleton.find_bone(leg_bones[i])).is_equal_approx(leg_poses[i])
+	check(legs_moving, "真实蓄力移动时腿部继续迈步")
 	check(player.player_model.motion_state == player.player_model.State.WALK and player.player_model.current_state == player.player_model.State.CHARGE, "蓄力与行走状态同时运行")
 	check(is_equal_approx(Vector2(player.velocity.x, player.velocity.z).length(), player.move_speed * 0.35), "蓄力移动保留减速规则")
 	Input.action_release("玩家前移")

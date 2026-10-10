@@ -27,6 +27,10 @@ GUI 左上角显示玩家生命进度条，下方显示 FPS 和当前相机模�
 
 奔跑验收：`Godot --headless --path . --script res://tests/player/玩家奔跑验收.gd` 验证左右 Shift、行走/奔跑速度、斜向移动、动画切换、输入阻塞、自由相机和远程奔跑状态。
 
+行走和待机时模型始终跟随第三人称相机的水平朝向，方向键只改变移动方向，按实际移动相对模型的方向混合前进、后退、左移和右移；斜向行走混合相邻两个动作。空手及持剑均使用四方向动作，相机俯仰不影响模型的水平转向，非奔跑的空中阶段也保持相机朝向。奔跑仍按原逻辑朝移动方向平滑转身，结束奔跑后行走恢复相机朝向；战斗继续使用瞄准及挥剑锁定的攻击方向，自由相机仍冻结角色。联机额外同步模型朝向，避免远程侧移或后退被显示成前进。
+
+四向行走验收：`Godot --headless --path . --script res://tests/player/玩家四向行走验收.gd` 检查空手及持剑的八个移动方向、行走与待机跟随相机朝向、模型正前方校正、实际腿骨姿态和斜向混合、奔跑转向及远程朝向；报告保存到 `.godot/walk-validation/report.json`。
+
 持剑验收：`Godot --headless --path . --script res://tests/player/玩家持剑验收.gd` 验证 Q 键、长按去重、全部动作的持剑切换、循环、剑可见性、输入阻塞、自由相机和远程状态。
 
 跳跃验收：`Godot --headless --path . --script res://tests/player/玩家跳跃验收.gd` 验证起跳、下降、走出平台、落地恢复、输入阻塞、自由相机和远程空中动画。
@@ -132,6 +136,8 @@ Godot --headless --editor --path . --import
 玩家场景的 `model/AnimationTree` 使用 `animations/player/玩家动画树.tres`，史莱姆场景的 `AnimationTree` 使用 `animations/enemies/史莱姆动画树.tres`。AnimationPlayer 保留导入动画库，运行时播放和切换统一由 AnimationTree 驱动。可以在 Godot 编辑器中打开这两个资源查看图结构。
 
 玩家根图将 `Locomotion` 移动状态机与 `Combat` 战斗状态机连接到 `UpperBody` 骨骼过滤混合节点。移动状态包括 Idle、Walk、Run、Jump、Falling；每个状态通过 Equipment 节点平滑混合空手与持剑动作。Walk / Run 的 Speed 节点按实际移动速度调整步频，蓄力和挥砍减速时腿部仍然迈步；移动停止后恢复待机。
+
+Walk 的 Unarmed / Sword 节点分别使用 `AnimationNodeBlendSpace2D`，前、后、左、右采样对应 `walk`、`walk-back`、`walk-left`、`walk-right` 及各自的 `-with-sword` 动作。混合坐标 X 正值向右、Y 负值向前，以模型朝向和 Forward Yaw Offset 校正后的实际速度计算。采样同步推进并使用向前行走的统一周期，较长的后退源动作按时间轴缩放，保持方向及装备切换时的步态相位；循环在模型导入设置中保留。
 
 战斗层播放 Charge → Hold，以及准备或保持状态 → Attack。Hold 在每个玩家初始化时从 `attack-ready` 末帧提取，长按不会重复抬剑，也不会暂停移动层。过滤范围按骨架层级从 `骨骼.001`（第一节脊柱）向下遍历，包含躯干、头和双臂，排除根部和双腿；战斗期间角色朝向仍跟随瞄准。可以在 model 的 Upper Body Root Bone 调整过滤起点，Combat Blend Time 调整战斗层淡入淡出，Blend Time 调整移动和装备姿势过渡。
 

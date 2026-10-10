@@ -1,5 +1,5 @@
 ## 组织玩家动画树中的移动、装备和上半身战斗层。
-## 为每个实例生成保持及挥剑事件动画，按实际速度调整步频并发送命中、结束信号。
+## 行走朝向跟随相机并混合四方向动作；为每个实例生成战斗事件动画，按实际速度调整步频。
 
 class_name PlayerAnimationStateMachine
 extends Node3D
@@ -12,8 +12,14 @@ enum State { IDLE, WALK, RUN, JUMP, FALLING, CHARGE, ATTACK }
 
 ## 空手待机动画名；必须与导入动画库中的名称一致，决定静止时的姿势。
 @export var idle_animation: StringName = &"Idle"
-## 空手行走动画名；用于移动层的行走状态，按实际速度调整步频。
+## 空手向前行走动画名；用于四方向混合的前方采样，必须与导入动画库一致。
 @export var walk_animation: StringName = &"walk"
+## 空手向后行走动画名；用于四方向混合的后方采样，必须与导入动画库一致。
+@export var walk_back_animation: StringName = &"walk-back"
+## 空手向左行走动画名；用于四方向混合的左方采样，必须与导入动画库一致。
+@export var walk_left_animation: StringName = &"walk-left"
+## 空手向右行走动画名；用于四方向混合的右方采样，必须与导入动画库一致。
+@export var walk_right_animation: StringName = &"walk-right"
 ## 空手奔跑动画名；用于移动层的奔跑状态，按实际速度调整步频。
 @export var run_animation: StringName = &"run"
 ## 空手起跳动画名；上升阶段使用一次播放动作。
@@ -23,8 +29,14 @@ enum State { IDLE, WALK, RUN, JUMP, FALLING, CHARGE, ATTACK }
 @export_group("持剑动画")
 ## 持剑待机动画名；装备切换时与空手待机平滑混合。
 @export var sword_idle_animation: StringName = &"Idle-with-sword"
-## 持剑行走动画名；影响持剑移动姿势和步频。
+## 持剑向前行走动画名；与空手四方向混合保持相同方向和步频。
 @export var sword_walk_animation: StringName = &"walk-with-sword"
+## 持剑向后行走动画名；用于后方采样，必须与导入动画库一致。
+@export var sword_walk_back_animation: StringName = &"walk-back-with-sword"
+## 持剑向左行走动画名；用于左方采样，必须与导入动画库一致。
+@export var sword_walk_left_animation: StringName = &"walk-left-with-sword"
+## 持剑向右行走动画名；用于右方采样，必须与导入动画库一致。
+@export var sword_walk_right_animation: StringName = &"walk-right-with-sword"
 ## 持剑奔跑动画名；影响持剑奔跑姿势和步频。
 @export var sword_run_animation: StringName = &"run-with-sword"
 ## 持剑起跳动画名；装备切换和上升阶段使用该动作。
@@ -52,7 +64,7 @@ enum State { IDLE, WALK, RUN, JUMP, FALLING, CHARGE, ATTACK }
 @export var walk_start_speed: float = 0.1
 ## 退出行走状态的水平速度阈值（米/秒）；应低于启动阈值。
 @export var walk_stop_speed: float = 0.05
-## 模型朝向插值速率（每秒）；越大越快朝移动或攻击方向转身，0 表示不推进转向。
+## 奔跑模型朝向插值速率（每秒）；越大转身越快，0 不转向；常规移动朝向跟随相机。
 @export_range(0.0, 30.0, 0.1) var turn_speed: float = 12.0
 ## 模型正前方的偏航校正角（度）；补偿导入模型朝向，不改变摄像机朝向。
 @export_range(-180.0, 180.0, 1.0) var forward_yaw_offset_degrees: float = 180
@@ -101,7 +113,9 @@ func _ready() -> void:
 
 func _setup_animation_library() -> bool:
 	for name: StringName in [idle_animation, walk_animation, run_animation, jump_animation, falling_animation,
+			walk_back_animation, walk_left_animation, walk_right_animation,
 			sword_idle_animation, sword_walk_animation, sword_run_animation, sword_jump_animation,
+			sword_walk_back_animation, sword_walk_left_animation, sword_walk_right_animation,
 			sword_falling_animation, charge_animation, attack_animation]:
 		if not _animation_player.has_animation(name):
 			push_error("玩家模型缺少 %s 动画。" % name)
@@ -172,6 +186,12 @@ func _configure_motion_nodes() -> void:
 	var armed: Array[StringName] = [sword_idle_animation, sword_walk_animation, sword_run_animation, sword_jump_animation, sword_falling_animation]
 	for i in MOTION_NODES.size():
 		var state := machine.get_node(MOTION_NODES[i]) as AnimationNodeBlendTree
+		if MOTION_NODES[i] == &"Walk":
+			_configure_walk_space(state.get_node(&"Unarmed") as AnimationNodeBlendSpace2D,
+				[walk_animation, walk_back_animation, walk_left_animation, walk_right_animation])
+			_configure_walk_space(state.get_node(&"Sword") as AnimationNodeBlendSpace2D,
+				[sword_walk_animation, sword_walk_back_animation, sword_walk_left_animation, sword_walk_right_animation])
+			continue
 		(state.get_node(&"Unarmed") as AnimationNodeAnimation).animation = unarmed[i]
 		(state.get_node(&"Sword") as AnimationNodeAnimation).animation = armed[i]
 	for i in machine.get_transition_count():
@@ -179,6 +199,18 @@ func _configure_motion_nodes() -> void:
 		transition.xfade_time = minf(blend_time, 0.06) if machine.get_transition_to(i) == &"Jump" else blend_time
 	var combat := graph.get_node(&"Combat") as AnimationNodeStateMachine
 	(combat.get_node(&"Charge") as AnimationNodeAnimation).animation = charge_animation
+
+
+func _configure_walk_space(space: AnimationNodeBlendSpace2D, names: Array[StringName]) -> void:
+	# 后退源动作周期较长；统一时间轴，让方向及装备混合始终处于同一步态相位。
+	var cycle_length := _animation_player.get_animation(walk_animation).length
+	for i in names.size():
+		var sample := space.get_blend_point_node(i) as AnimationNodeAnimation
+		sample.animation = names[i]
+		sample.use_custom_timeline = true
+		sample.timeline_length = cycle_length
+		sample.stretch_time_scale = true
+		sample.loop_mode = Animation.LOOP_LINEAR
 
 
 func _physics_process(delta: float) -> void:
@@ -204,19 +236,29 @@ func _update_sword_visibility() -> void:
 		_sword_mesh.visible = sword_equipped
 
 
-func update_motion(motion_velocity: Vector3, delta: float = 0.0, is_running: bool = false, on_floor: bool = true) -> void:
+func update_motion(motion_velocity: Vector3, delta: float = 0.0, is_running: bool = false, on_floor: bool = true, facing_direction: Vector3 = Vector3.ZERO) -> void:
 	if _motion_playback == null:
 		return
 	var speed := Vector2(motion_velocity.x, motion_velocity.z).length()
-	# 战斗锁定瞄准朝向，但移动动画仍然持续更新。
-	if not combat_active and speed > walk_stop_speed and delta > 0.0:
-		var target_yaw := atan2(motion_velocity.x, motion_velocity.z) + deg_to_rad(forward_yaw_offset_degrees)
-		global_rotation.y = lerp_angle(global_rotation.y, target_yaw, 1.0 - exp(-turn_speed * delta))
 	var next := State.IDLE
 	if not on_floor:
 		next = State.JUMP if motion_velocity.y > 0.0 else State.FALLING
 	elif speed > (walk_start_speed if motion_state == State.IDLE else walk_stop_speed):
 		next = State.RUN if is_running else State.WALK
+	# 常规移动与待机朝向锁定相机，方向键只改变移动；战斗继续使用锁定的攻击方向。
+	if not is_running and not combat_active and not facing_direction.is_zero_approx():
+		global_rotation.y = atan2(facing_direction.x, facing_direction.z) + deg_to_rad(forward_yaw_offset_degrees)
+	elif (is_running or not on_floor) and not combat_active and speed > walk_stop_speed and delta > 0.0:
+		var target_yaw := atan2(motion_velocity.x, motion_velocity.z) + deg_to_rad(forward_yaw_offset_degrees)
+		global_rotation.y = lerp_angle(global_rotation.y, target_yaw, 1.0 - exp(-turn_speed * delta))
+	if speed > walk_stop_speed:
+		var facing_yaw := global_rotation.y - deg_to_rad(forward_yaw_offset_degrees)
+		var forward := Vector3(sin(facing_yaw), 0.0, cos(facing_yaw))
+		var right := forward.cross(Vector3.UP)
+		# X 正值向右，Y 负值向前；使用实际运动，碰撞及减速也会反映到混合方向。
+		var direction := Vector2(motion_velocity.dot(right), -motion_velocity.dot(forward)) / speed
+		animation_tree.set("parameters/Locomotion/Walk/Unarmed/blend_position", direction)
+		animation_tree.set("parameters/Locomotion/Walk/Sword/blend_position", direction)
 	var player := get_parent()
 	var walk_speed: float = player.move_speed
 	var run_speed: float = player.run_speed
@@ -238,6 +280,7 @@ func _set_state(next: State) -> void:
 
 
 func get_locomotion_animation() -> StringName:
+	# 保留原查询接口；Walk 返回向前采样名称，实际四向权重由混合空间参数决定。
 	var unarmed: Array[StringName] = [idle_animation, walk_animation, run_animation, jump_animation, falling_animation]
 	var armed: Array[StringName] = [sword_idle_animation, sword_walk_animation, sword_run_animation, sword_jump_animation, sword_falling_animation]
 	return armed[motion_state] if sword_equipped else unarmed[motion_state]

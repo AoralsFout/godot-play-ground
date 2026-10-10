@@ -1,16 +1,54 @@
-; 玩家动画图，组合移动状态机、装备混合及上半身战斗层。
-; 场景和资源参数由 Godot 编辑器维护，关联脚本说明可调属性的用途。
+[gd_resource type="AnimationNodeBlendTree" format=3 uid="uid://c57e11xm7k7h8"]
 
-[gd_resource type="AnimationNodeBlendTree" load_steps=51 format=3]
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_46"]
+animation = &"combat/strike"
 
-[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_1"]
-animation = &"Idle"
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_44"]
+animation = &"attack-ready"
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_45"]
+animation = &"combat/hold"
+
+[sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_47"]
+switch_mode = 2
+advance_mode = 2
+
+[sub_resource type="AnimationNodeStateMachineTransition" id="CombatStrikeTransition"]
+xfade_time = 0.04
+
+[sub_resource type="AnimationNodeStateMachine" id="AnimationNodeStateMachine_48"]
+states/Attack/node = SubResource("AnimationNodeAnimation_46")
+states/Attack/position = Vector2(440, 180)
+states/Charge/node = SubResource("AnimationNodeAnimation_44")
+states/Charge/position = Vector2(200, 0)
+states/Hold/node = SubResource("AnimationNodeAnimation_45")
+states/Hold/position = Vector2(440, 0)
+transitions = ["Charge", "Hold", SubResource("AnimationNodeStateMachineTransition_47"), "Charge", "Attack", SubResource("CombatStrikeTransition"), "Hold", "Attack", SubResource("CombatStrikeTransition")]
+
+[sub_resource type="AnimationNodeBlend2" id="AnimationNodeBlend2_21"]
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_20"]
+animation = &"falling-with-sword"
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_19"]
+animation = &"falling"
+
+[sub_resource type="AnimationNodeBlendTree" id="AnimationNodeBlendTree_22"]
+nodes/Unarmed/node = SubResource("AnimationNodeAnimation_19")
+nodes/Unarmed/position = Vector2(-360, -80)
+nodes/Sword/node = SubResource("AnimationNodeAnimation_20")
+nodes/Sword/position = Vector2(-360, 100)
+nodes/Equipment/node = SubResource("AnimationNodeBlend2_21")
+nodes/Equipment/position = Vector2(-100, 20)
+node_connections = [&"output", 0, &"Equipment", &"Equipment", 0, &"Unarmed", &"Equipment", 1, &"Sword"]
+
+[sub_resource type="AnimationNodeBlend2" id="AnimationNodeBlend2_3"]
 
 [sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_2"]
 animation = &"Idle-with-sword"
 
-[sub_resource type="AnimationNodeBlend2" id="AnimationNodeBlend2_3"]
-
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_1"]
+animation = &"Idle"
 
 [sub_resource type="AnimationNodeBlendTree" id="AnimationNodeBlendTree_4"]
 nodes/Unarmed/node = SubResource("AnimationNodeAnimation_1")
@@ -19,42 +57,34 @@ nodes/Sword/node = SubResource("AnimationNodeAnimation_2")
 nodes/Sword/position = Vector2(-360, 100)
 nodes/Equipment/node = SubResource("AnimationNodeBlend2_3")
 nodes/Equipment/position = Vector2(-100, 20)
-node_connections = [&"Equipment", 0, &"Unarmed", &"Equipment", 1, &"Sword", &"output", 0, &"Equipment"]
+node_connections = [&"output", 0, &"Equipment", &"Equipment", 0, &"Unarmed", &"Equipment", 1, &"Sword"]
 
-[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_5"]
-animation = &"walk"
+[sub_resource type="AnimationNodeBlend2" id="AnimationNodeBlend2_17"]
 
-[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_6"]
-animation = &"walk-with-sword"
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_16"]
+animation = &"jump-with-sword"
 
-[sub_resource type="AnimationNodeBlend2" id="AnimationNodeBlend2_7"]
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_15"]
+animation = &"jump"
 
-
-[sub_resource type="AnimationNodeTimeScale" id="AnimationNodeTimeScale_8"]
-
-
-[sub_resource type="AnimationNodeBlendTree" id="AnimationNodeBlendTree_9"]
-nodes/Unarmed/node = SubResource("AnimationNodeAnimation_5")
+[sub_resource type="AnimationNodeBlendTree" id="AnimationNodeBlendTree_18"]
+nodes/Unarmed/node = SubResource("AnimationNodeAnimation_15")
 nodes/Unarmed/position = Vector2(-360, -80)
-nodes/Sword/node = SubResource("AnimationNodeAnimation_6")
+nodes/Sword/node = SubResource("AnimationNodeAnimation_16")
 nodes/Sword/position = Vector2(-360, 100)
-nodes/Equipment/node = SubResource("AnimationNodeBlend2_7")
+nodes/Equipment/node = SubResource("AnimationNodeBlend2_17")
 nodes/Equipment/position = Vector2(-100, 20)
-nodes/Speed/node = SubResource("AnimationNodeTimeScale_8")
-nodes/Speed/position = Vector2(120, 20)
-node_connections = [&"Equipment", 0, &"Unarmed", &"Equipment", 1, &"Sword", &"Speed", 0, &"Equipment", &"output", 0, &"Speed"]
+node_connections = [&"output", 0, &"Equipment", &"Equipment", 0, &"Unarmed", &"Equipment", 1, &"Sword"]
 
-[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_10"]
-animation = &"run"
+[sub_resource type="AnimationNodeBlend2" id="AnimationNodeBlend2_12"]
+
+[sub_resource type="AnimationNodeTimeScale" id="AnimationNodeTimeScale_13"]
 
 [sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_11"]
 animation = &"run-with-sword"
 
-[sub_resource type="AnimationNodeBlend2" id="AnimationNodeBlend2_12"]
-
-
-[sub_resource type="AnimationNodeTimeScale" id="AnimationNodeTimeScale_13"]
-
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_10"]
+animation = &"run"
 
 [sub_resource type="AnimationNodeBlendTree" id="AnimationNodeBlendTree_14"]
 nodes/Unarmed/node = SubResource("AnimationNodeAnimation_10")
@@ -65,43 +95,81 @@ nodes/Equipment/node = SubResource("AnimationNodeBlend2_12")
 nodes/Equipment/position = Vector2(-100, 20)
 nodes/Speed/node = SubResource("AnimationNodeTimeScale_13")
 nodes/Speed/position = Vector2(120, 20)
-node_connections = [&"Equipment", 0, &"Unarmed", &"Equipment", 1, &"Sword", &"Speed", 0, &"Equipment", &"output", 0, &"Speed"]
+node_connections = [&"output", 0, &"Speed", &"Equipment", 0, &"Unarmed", &"Equipment", 1, &"Sword", &"Speed", 0, &"Equipment"]
 
-[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_15"]
-animation = &"jump"
+[sub_resource type="AnimationNodeBlend2" id="AnimationNodeBlend2_7"]
+sync = true
 
-[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_16"]
-animation = &"jump-with-sword"
+[sub_resource type="AnimationNodeTimeScale" id="AnimationNodeTimeScale_8"]
 
-[sub_resource type="AnimationNodeBlend2" id="AnimationNodeBlend2_17"]
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_6"]
+animation = &"walk-with-sword"
 
+[sub_resource type="AnimationNodeAnimation" id="SwordWalkBack"]
+animation = &"walk-back-with-sword"
 
-[sub_resource type="AnimationNodeBlendTree" id="AnimationNodeBlendTree_18"]
-nodes/Unarmed/node = SubResource("AnimationNodeAnimation_15")
+[sub_resource type="AnimationNodeAnimation" id="SwordWalkLeft"]
+animation = &"walk-left-with-sword"
+
+[sub_resource type="AnimationNodeAnimation" id="SwordWalkRight"]
+animation = &"walk-right-with-sword"
+
+[sub_resource type="AnimationNodeBlendSpace2D" id="WalkSwordDirections"]
+x_label = "左右"
+y_label = "前后"
+sync_mode = 1
+blend_point_0/node = SubResource("AnimationNodeAnimation_6")
+blend_point_0/pos = Vector2(0, -1)
+blend_point_0/name = &"0"
+blend_point_1/node = SubResource("SwordWalkBack")
+blend_point_1/pos = Vector2(0, 1)
+blend_point_1/name = &"1"
+blend_point_2/node = SubResource("SwordWalkLeft")
+blend_point_2/pos = Vector2(-1, 0)
+blend_point_2/name = &"2"
+blend_point_3/node = SubResource("SwordWalkRight")
+blend_point_3/pos = Vector2(1, 0)
+blend_point_3/name = &"3"
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_5"]
+animation = &"walk"
+
+[sub_resource type="AnimationNodeAnimation" id="WalkBack"]
+animation = &"walk-back"
+
+[sub_resource type="AnimationNodeAnimation" id="WalkLeft"]
+animation = &"walk-left"
+
+[sub_resource type="AnimationNodeAnimation" id="WalkRight"]
+animation = &"walk-right"
+
+[sub_resource type="AnimationNodeBlendSpace2D" id="WalkUnarmedDirections"]
+x_label = "左右"
+y_label = "前后"
+sync_mode = 1
+blend_point_0/node = SubResource("AnimationNodeAnimation_5")
+blend_point_0/pos = Vector2(0, -1)
+blend_point_0/name = &"0"
+blend_point_1/node = SubResource("WalkBack")
+blend_point_1/pos = Vector2(0, 1)
+blend_point_1/name = &"1"
+blend_point_2/node = SubResource("WalkLeft")
+blend_point_2/pos = Vector2(-1, 0)
+blend_point_2/name = &"2"
+blend_point_3/node = SubResource("WalkRight")
+blend_point_3/pos = Vector2(1, 0)
+blend_point_3/name = &"3"
+
+[sub_resource type="AnimationNodeBlendTree" id="AnimationNodeBlendTree_9"]
+nodes/Unarmed/node = SubResource("WalkUnarmedDirections")
 nodes/Unarmed/position = Vector2(-360, -80)
-nodes/Sword/node = SubResource("AnimationNodeAnimation_16")
+nodes/Sword/node = SubResource("WalkSwordDirections")
 nodes/Sword/position = Vector2(-360, 100)
-nodes/Equipment/node = SubResource("AnimationNodeBlend2_17")
+nodes/Equipment/node = SubResource("AnimationNodeBlend2_7")
 nodes/Equipment/position = Vector2(-100, 20)
-node_connections = [&"Equipment", 0, &"Unarmed", &"Equipment", 1, &"Sword", &"output", 0, &"Equipment"]
-
-[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_19"]
-animation = &"falling"
-
-[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_20"]
-animation = &"falling-with-sword"
-
-[sub_resource type="AnimationNodeBlend2" id="AnimationNodeBlend2_21"]
-
-
-[sub_resource type="AnimationNodeBlendTree" id="AnimationNodeBlendTree_22"]
-nodes/Unarmed/node = SubResource("AnimationNodeAnimation_19")
-nodes/Unarmed/position = Vector2(-360, -80)
-nodes/Sword/node = SubResource("AnimationNodeAnimation_20")
-nodes/Sword/position = Vector2(-360, 100)
-nodes/Equipment/node = SubResource("AnimationNodeBlend2_21")
-nodes/Equipment/position = Vector2(-100, 20)
-node_connections = [&"Equipment", 0, &"Unarmed", &"Equipment", 1, &"Sword", &"output", 0, &"Equipment"]
+nodes/Speed/node = SubResource("AnimationNodeTimeScale_8")
+nodes/Speed/position = Vector2(120, 20)
+node_connections = [&"output", 0, &"Speed", &"Equipment", 0, &"Unarmed", &"Equipment", 1, &"Sword", &"Speed", 0, &"Equipment"]
 
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_23"]
 xfade_time = 0.2
@@ -164,42 +232,17 @@ xfade_time = 0.2
 xfade_time = 0.06
 
 [sub_resource type="AnimationNodeStateMachine" id="AnimationNodeStateMachine_43"]
-states/Idle/node = SubResource("AnimationNodeBlendTree_4")
-states/Idle/position = Vector2(0, 0)
-states/Walk/node = SubResource("AnimationNodeBlendTree_9")
-states/Walk/position = Vector2(210, 0)
-states/Run/node = SubResource("AnimationNodeBlendTree_14")
-states/Run/position = Vector2(420, 0)
-states/Jump/node = SubResource("AnimationNodeBlendTree_18")
-states/Jump/position = Vector2(630, 200)
 states/Falling/node = SubResource("AnimationNodeBlendTree_22")
 states/Falling/position = Vector2(840, 200)
-transitions = [&"Idle", &"Walk", SubResource("AnimationNodeStateMachineTransition_23"), &"Idle", &"Run", SubResource("AnimationNodeStateMachineTransition_24"), &"Idle", &"Jump", SubResource("AnimationNodeStateMachineTransition_25"), &"Idle", &"Falling", SubResource("AnimationNodeStateMachineTransition_26"), &"Walk", &"Idle", SubResource("AnimationNodeStateMachineTransition_27"), &"Walk", &"Run", SubResource("AnimationNodeStateMachineTransition_28"), &"Walk", &"Jump", SubResource("AnimationNodeStateMachineTransition_29"), &"Walk", &"Falling", SubResource("AnimationNodeStateMachineTransition_30"), &"Run", &"Idle", SubResource("AnimationNodeStateMachineTransition_31"), &"Run", &"Walk", SubResource("AnimationNodeStateMachineTransition_32"), &"Run", &"Jump", SubResource("AnimationNodeStateMachineTransition_33"), &"Run", &"Falling", SubResource("AnimationNodeStateMachineTransition_34"), &"Jump", &"Idle", SubResource("AnimationNodeStateMachineTransition_35"), &"Jump", &"Walk", SubResource("AnimationNodeStateMachineTransition_36"), &"Jump", &"Run", SubResource("AnimationNodeStateMachineTransition_37"), &"Jump", &"Falling", SubResource("AnimationNodeStateMachineTransition_38"), &"Falling", &"Idle", SubResource("AnimationNodeStateMachineTransition_39"), &"Falling", &"Walk", SubResource("AnimationNodeStateMachineTransition_40"), &"Falling", &"Run", SubResource("AnimationNodeStateMachineTransition_41"), &"Falling", &"Jump", SubResource("AnimationNodeStateMachineTransition_42")]
-
-[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_44"]
-animation = &"attack-ready"
-
-[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_45"]
-animation = &"combat/hold"
-
-[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_46"]
-animation = &"combat/strike"
-
-[sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_47"]
-switch_mode = 2
-advance_mode = 2
-
-[sub_resource type="AnimationNodeStateMachineTransition" id="CombatStrikeTransition"]
-xfade_time = 0.04
-
-[sub_resource type="AnimationNodeStateMachine" id="AnimationNodeStateMachine_48"]
-states/Charge/node = SubResource("AnimationNodeAnimation_44")
-states/Charge/position = Vector2(200, 0)
-states/Hold/node = SubResource("AnimationNodeAnimation_45")
-states/Hold/position = Vector2(440, 0)
-states/Attack/node = SubResource("AnimationNodeAnimation_46")
-states/Attack/position = Vector2(440, 180)
-transitions = [&"Charge", &"Hold", SubResource("AnimationNodeStateMachineTransition_47"), &"Charge", &"Attack", SubResource("CombatStrikeTransition"), &"Hold", &"Attack", SubResource("CombatStrikeTransition")]
+states/Idle/node = SubResource("AnimationNodeBlendTree_4")
+states/Idle/position = Vector2(0, 0)
+states/Jump/node = SubResource("AnimationNodeBlendTree_18")
+states/Jump/position = Vector2(630, 200)
+states/Run/node = SubResource("AnimationNodeBlendTree_14")
+states/Run/position = Vector2(420, 0)
+states/Walk/node = SubResource("AnimationNodeBlendTree_9")
+states/Walk/position = Vector2(210, 0)
+transitions = ["Idle", "Walk", SubResource("AnimationNodeStateMachineTransition_23"), "Idle", "Run", SubResource("AnimationNodeStateMachineTransition_24"), "Idle", "Jump", SubResource("AnimationNodeStateMachineTransition_25"), "Idle", "Falling", SubResource("AnimationNodeStateMachineTransition_26"), "Walk", "Idle", SubResource("AnimationNodeStateMachineTransition_27"), "Walk", "Run", SubResource("AnimationNodeStateMachineTransition_28"), "Walk", "Jump", SubResource("AnimationNodeStateMachineTransition_29"), "Walk", "Falling", SubResource("AnimationNodeStateMachineTransition_30"), "Run", "Idle", SubResource("AnimationNodeStateMachineTransition_31"), "Run", "Walk", SubResource("AnimationNodeStateMachineTransition_32"), "Run", "Jump", SubResource("AnimationNodeStateMachineTransition_33"), "Run", "Falling", SubResource("AnimationNodeStateMachineTransition_34"), "Jump", "Idle", SubResource("AnimationNodeStateMachineTransition_35"), "Jump", "Walk", SubResource("AnimationNodeStateMachineTransition_36"), "Jump", "Run", SubResource("AnimationNodeStateMachineTransition_37"), "Jump", "Falling", SubResource("AnimationNodeStateMachineTransition_38"), "Falling", "Idle", SubResource("AnimationNodeStateMachineTransition_39"), "Falling", "Walk", SubResource("AnimationNodeStateMachineTransition_40"), "Falling", "Run", SubResource("AnimationNodeStateMachineTransition_41"), "Falling", "Jump", SubResource("AnimationNodeStateMachineTransition_42")]
 
 [sub_resource type="AnimationNodeBlend2" id="AnimationNodeBlend2_49"]
 filter_enabled = true
@@ -212,4 +255,4 @@ nodes/Combat/node = SubResource("AnimationNodeStateMachine_48")
 nodes/Combat/position = Vector2(-400, 120)
 nodes/UpperBody/node = SubResource("AnimationNodeBlend2_49")
 nodes/UpperBody/position = Vector2(-100, 0)
-node_connections = [&"UpperBody", 0, &"Locomotion", &"UpperBody", 1, &"Combat", &"output", 0, &"UpperBody"]
+node_connections = [&"output", 0, &"UpperBody", &"UpperBody", 0, &"Locomotion", &"UpperBody", 1, &"Combat"]

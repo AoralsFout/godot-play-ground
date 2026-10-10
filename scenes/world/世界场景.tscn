@@ -1,6 +1,3 @@
-; 世界场景，组合地图、日月光、天空控制器、体积云及真实海面。
-; 场景和资源参数由 Godot 编辑器维护，关联脚本说明可调属性的用途。
-
 [gd_scene format=4 uid="uid://m0upkn44xwpi"]
 
 [ext_resource type="Shader" uid="uid://b88lb8blojt03" path="res://shaders/sky/晴空.gdshader" id="1_vob5h"]
@@ -14,16 +11,16 @@
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_i17u0"]
 shader = ExtResource("1_vob5h")
-shader_parameter/zenith_color = Color(0.16061425, 0.2559528, 0.47082326, 1)
-shader_parameter/horizon_color = Color(0.9500584, 0.49265155, 0.26371923, 1)
-shader_parameter/sky_sun_direction = Vector3(0.39549676, 0.015707318, 0.91833305)
-shader_parameter/sun_color = Color(1, 0.32267362, 0.103290625, 1)
+shader_parameter/zenith_color = Color(0.15135999, 0.36, 0.67296004, 1)
+shader_parameter/horizon_color = Color(0.87168, 0.74728, 0.60288, 1)
+shader_parameter/sky_sun_direction = Vector3(0.38631833, 0.21473533, 0.8970211)
+shader_parameter/sun_color = Color(1, 0.66124403, 0.5199926, 1)
 shader_parameter/sun_visibility = 1.0
-shader_parameter/daylight = 0.18219656503028323
-shader_parameter/twilight = 1.0
+shader_parameter/daylight = 0.7438005711617818
+shader_parameter/twilight = 0.4208849888272632
 shader_parameter/sky_moon_direction = Vector3(-0.9033546, 0.28568837, 0.3198948)
 shader_parameter/moon_color = Color(0.76, 0.84, 1, 1)
-shader_parameter/moon_visibility = 0.01755029078438597
+shader_parameter/moon_visibility = 0.0
 shader_parameter/moon_angular_radius = 0.010471975511965976
 
 [sub_resource type="Sky" id="Sky_tgaxo"]
@@ -36,9 +33,9 @@ background_mode = 2
 background_color = Color(0.5411765, 0.81960785, 1, 1)
 sky = SubResource("Sky_tgaxo")
 ambient_light_source = 2
-ambient_light_color = Color(0.6185487, 0.44673893, 0.43669042, 0.9971481)
+ambient_light_color = Color(0.6695949, 0.72142744, 0.8111651, 1)
 ambient_light_sky_contribution = 0.0
-ambient_light_energy = 0.3721553
+ambient_light_energy = 0.625342
 reflected_light_source = 2
 tonemap_mode = 3
 tonemap_exposure = 0.85
@@ -53,9 +50,10 @@ ssao_sharpness = 0.9
 glow_enabled = true
 glow_intensity = 0.15
 glow_hdr_threshold = 1.3
-fog_light_color = Color(0.9500584, 0.49265155, 0.26371923, 1)
-fog_light_energy = 0.28033298
-fog_sun_scatter = 0.0066862004
+fog_enabled = true
+fog_light_color = Color(0.87168, 0.74728, 0.60288, 1)
+fog_light_energy = 0.7745445
+fog_sun_scatter = 0.08
 fog_density = 0.00035
 fog_aerial_perspective = 0.35
 fog_sky_affect = 0.0
@@ -4773,8 +4771,8 @@ shader_parameter/extinction = 0.00192
 shader_parameter/ground_cloud_shadows = true
 shader_parameter/ground_shadow_strength = 1.0
 shader_parameter/ground_shadow_steps = 12
-shader_parameter/cloud_ground_sun_direction = Vector3(0.39549676, 0.015707318, 0.91833305)
-shader_parameter/cloud_ground_sun_intensity = 0.09611413
+shader_parameter/cloud_ground_sun_direction = Vector3(0.38631833, 0.21473533, 0.8970211)
+shader_parameter/cloud_ground_sun_intensity = 1.15
 shader_parameter/sea_level = 15.0
 shader_parameter/beach_start = 3.0
 shader_parameter/beach_end = 18.0
@@ -4806,9 +4804,9 @@ sun_rotation_speed = 5.0
 sun_rotation_editor_preview = false
 
 [node name="日光" type="DirectionalLight3D" parent="." unique_id=1878366738]
-transform = Transform3D(0.9184462, -0.0062129577, 0.39549655, 0, 0.9998764, 0.015707312, -0.39554545, -0.014426325, 0.9183327, 0, 24.227514, 0)
-light_color = Color(1, 0.32267362, 0.103290625, 1)
-light_energy = 0.09611413
+transform = Transform3D(0.9184462, -0.08493757, 0.3863182, 0, 0.97667205, 0.21473524, -0.39554545, -0.19722284, 0.89702076, 0, 24.227514, 0)
+light_color = Color(1, 0.66124403, 0.5199926, 1)
+light_energy = 1.15
 shadow_enabled = true
 shadow_bias = 0.05
 shadow_blur = 10.0
@@ -4817,7 +4815,7 @@ directional_shadow_max_distance = 160.0
 [node name="月光" type="DirectionalLight3D" parent="." unique_id=858578572]
 transform = Transform3D(0.33380696, 0.26930168, -0.9033545, 0, 0.9583226, 0.28568834, 0.94264144, -0.095364764, 0.31989473, 0, 30, 0)
 light_color = Color(0.76, 0.84, 1, 1)
-light_energy = 0.004387573
+light_energy = 0.0
 shadow_enabled = true
 shadow_blur = 6.0
 directional_shadow_max_distance = 120.0

@@ -1,6 +1,3 @@
-; 体积云基础柏林噪声源，控制器生成带三维逐级缩小层的运行纹理。
-; 场景和资源参数由 Godot 编辑器维护，关联脚本说明可调属性的用途。
-
 [gd_resource type="NoiseTexture3D" format=3 uid="uid://btyf41uhjau7p"]
 
 [sub_resource type="FastNoiseLite" id="Noise_perlin"]

@@ -1,6 +1,3 @@
-; 晴空资源，天空控制器复制并更新其着色器参数以实现昼夜。
-; 场景和资源参数由 Godot 编辑器维护，关联脚本说明可调属性的用途。
-
 [gd_resource type="Sky" format=3 uid="uid://bfukxxoo65dha"]
 
 [ext_resource type="Shader" uid="uid://b88lb8blojt03" path="res://shaders/sky/晴空.gdshader" id="1_sky"]

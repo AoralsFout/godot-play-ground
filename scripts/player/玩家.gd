@@ -31,6 +31,8 @@ var player_nickname := "玩家"
 var _sync_elapsed := 0.0
 var _remote_position := Vector3.ZERO
 var _remote_yaw := 0.0
+var _remote_model_yaw := 0.0
+var _has_remote_model_yaw := false
 var _has_remote_state := false
 var _remote_is_running := false
 var _remote_on_floor := true
@@ -153,12 +155,19 @@ func _physics_process(delta: float) -> void:
 		if _has_remote_state:
 			global_position = global_position.lerp(_remote_position, minf(delta * 16.0, 1.0))
 			camera_yaw.rotation.y = lerp_angle(camera_yaw.rotation.y, _remote_yaw, minf(delta * 16.0, 1.0))
+			# 非奔跑时还原发送方的相机跟随或战斗朝向，方向键不触发移动转身。
+			if _has_remote_model_yaw and not _remote_is_running:
+				player_model.global_rotation.y = lerp_angle(player_model.global_rotation.y, _remote_model_yaw, minf(delta * 16.0, 1.0))
 			_update_map_heading()
 		is_running = _remote_is_running
 		var remote_motion := (global_position - previous_position) / maxf(delta, 0.000001)
 		# 远程角色没有地面碰撞，使用同步的接地状态和竖直速度判断空中阶段。
 		remote_motion.y = _remote_vertical_speed
-		player_model.update_motion(remote_motion, delta, is_running, _remote_on_floor)
+		var facing_direction := -camera_yaw.global_basis.z
+		if _has_remote_model_yaw:
+			var facing_yaw := player_model.global_rotation.y - deg_to_rad(player_model.forward_yaw_offset_degrees)
+			facing_direction = Vector3(sin(facing_yaw), 0.0, cos(facing_yaw))
+		player_model.update_motion(remote_motion, delta, is_running, _remote_on_floor, facing_direction)
 		return
 	if free_camera_enabled:
 		is_running = false
@@ -185,7 +194,7 @@ func _physics_process(delta: float) -> void:
 	move_and_slide()
 	var motion_velocity := get_real_velocity()
 	motion_velocity.y = velocity.y
-	player_model.update_motion(motion_velocity, delta, is_running, is_on_floor())
+	player_model.update_motion(motion_velocity, delta, is_running, is_on_floor(), -camera_yaw.global_basis.z)
 	_sync_local_state(delta)
 
 
@@ -196,6 +205,7 @@ func _sync_local_state(delta: float) -> void:
 		Session.publish_local_state({
 			"position": global_position,
 			"yaw": camera_yaw.rotation.y,
+			"model_yaw": player_model.global_rotation.y,
 			"is_running": is_running,
 			"sword_equipped": sword_equipped,
 			# 自由相机冻结角色，远程模型也应保持静止动画。
@@ -213,6 +223,10 @@ func apply_network_state(state: Dictionary) -> void:
 	_remote_position = target
 	_remote_yaw = state["yaw"]
 	_remote_is_running = state.get("is_running", false) == true
+	var model_yaw = state.get("model_yaw")
+	_has_remote_model_yaw = (model_yaw is float or model_yaw is int) and is_finite(float(model_yaw))
+	if _has_remote_model_yaw:
+		_remote_model_yaw = float(model_yaw)
 	sword_equipped = state.get("sword_equipped", false) == true
 	player_model.set_sword_equipped(sword_equipped)
 	_remote_on_floor = state.get("on_floor", true) == true
@@ -222,6 +236,8 @@ func apply_network_state(state: Dictionary) -> void:
 		_remote_vertical_speed = float(vertical_speed)
 	if not _has_remote_state or global_position.distance_to(target) > 10.0:
 		global_position = target
+		if _has_remote_model_yaw:
+			player_model.global_rotation.y = _remote_model_yaw
 	_has_remote_state = true
 
 
